@@ -1,9 +1,13 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-/* 1. Ambil font Manrope dari Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+@layer base {
+  body {
+    @apply bg-gray-50 text-gray-900 antialiased;
+  }
+}
 
-/* 2. Daftarkan font ke dalam sistem Tailwind v4 */
-@theme {
-  --font-manrope: "Manrope", sans-serif;
+.glass {
+  @apply bg-white/70 backdrop-blur-md border border-white/20;
 }

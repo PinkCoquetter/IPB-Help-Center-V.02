@@ -76,3 +76,13 @@ class TicketDetailResponse(BaseModel):
     resolved_at: Optional[datetime]
     
     model_config = {"from_attributes": True}
+
+class TicketReportResponse(BaseModel):
+    total_tickets: int
+    open_tickets: int
+    in_progress_tickets: int
+    resolved_tickets: int
+    rejected_tickets: int
+    closed_tickets: int
+
+    model_config = {"from_attributes": True}

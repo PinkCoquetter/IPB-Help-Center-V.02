@@ -9,7 +9,7 @@ services:
       POSTGRES_PASSWORD: password
       POSTGRES_DB: ipb_helpdesk
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -24,8 +24,8 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql+asyncpg://postgres:password@db:5432/ipb_helpdesk
-      - SECRET_KEY=ganti-secret-key-ini-di-production
+      - DATABASE_URL=postgresql+asyncpg://postgres:love@db:5432/ipb_helpdesk
+      - SECRET_KEY=yaudalahyeah
     depends_on:
       - db
 

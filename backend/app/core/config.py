@@ -7,9 +7,9 @@ class Settings(BaseSettings):
     DEBUG: bool = True
 
     # Defaults that can be overridden by .env
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:password@localhost:5432/ipb_helpdesk"
+    DATABASE_URL: str = "postgresql+asyncpg://postgres:love@localhost:5432/ipb-helpdesk-postgres"
     
-    SECRET_KEY: str = "ganti-secret-key-ini-di-production"
+    SECRET_KEY: str = "yaudahlahyeah"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7

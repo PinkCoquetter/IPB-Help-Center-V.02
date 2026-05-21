@@ -7,9 +7,9 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: love
-      POSTGRES_DB: ipb-helpdesk-postgres
+      POSTGRES_DB: ipb_helpdesk
     ports:
-      - "5433:5432"
+      - "5435:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -37,7 +37,7 @@ services:
     ports:
       - "5173:5173"
     environment:
-      - VITE_API_URL=http://localhost:8000
+      - VITE_API_URL=http://localhost:8000/api
     depends_on:
       - backend
 

@@ -84,5 +84,6 @@ class TicketReportResponse(BaseModel):
     resolved_tickets: int
     rejected_tickets: int
     closed_tickets: int
+    avg_resolution_hours: Optional[float] = None
 
     model_config = {"from_attributes": True}

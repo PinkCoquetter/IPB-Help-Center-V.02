@@ -1,18 +1,26 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 
 const Login = () => {
   const { login } = useAuth();
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    setLoading(true);
     try {
       await login(email, password);
+      navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.detail || 'Login failed');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -46,9 +54,10 @@ const Login = () => {
         </div>
         <button 
           type="submit" 
-          className="w-full py-2.5 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition shadow-sm"
+          disabled={loading}
+          className="w-full py-2.5 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition shadow-sm disabled:opacity-50"
         >
-          Sign In
+          {loading ? 'Signing in...' : 'Sign In'}
         </button>
       </form>
     </div>

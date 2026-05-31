@@ -21,21 +21,24 @@ const SubmitRequestPage = ({ isLoggedIn, onLogout, addTicket }) => {
     e.preventDefault();
 
     if (ticketData.title && ticketData.nim && ticketData.description) {
-      const newId = `TKT-${Math.floor(1000 + Math.random() * 9000)}`;
-      const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-
-      // 1. Simpan ke Global State (App.jsx)
+      const now = new Date();
+    const ticketId = `TKT-${Math.floor(1000 + Math.random() * 9000)}`;
+    const dateNow = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const timeNow = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+      
       addTicket({
-        id: newId,
-        status: 'OPEN',
-        title: ticketData.title,
-        desc: ticketData.description,
-        nim: ticketData.nim,
-        date: today
-      });
+      id: ticketId,
+      status: 'OPEN',
+      title: ticketData.title,
+      desc: ticketData.description,
+      studentName: 'JOHANNA D.', // Nanti ini bisa diambil dari data user yang sedang login
+      nim: ticketData.nim,
+      date: dateNow,
+      timestamp: timeNow 
+    });
 
-      // 2. Langsung pindah ke halaman Detail/Chat
-navigate(`/tickets/${newId}`);
+
+navigate(`/tickets/${ticketId}`);
     } else {
       alert("Mohon lengkapi Title, NIM, dan Deskripsi");      
     } 

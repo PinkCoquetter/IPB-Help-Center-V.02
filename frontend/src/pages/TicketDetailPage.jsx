@@ -13,7 +13,6 @@ const TicketDetailPage = ({ isLoggedIn, onLogout, tickets }) => {
   const [messages, setMessages] = useState([]);
   const [replyText, setReplyText] = useState('');
 
-  // Inisialisasi pesan pertama dari deskripsi tiket
   useEffect(() => {
     if (ticket) {
       setMessages([
@@ -32,30 +31,20 @@ const TicketDetailPage = ({ isLoggedIn, onLogout, tickets }) => {
   const handleSendReply = (e) => {
     e.preventDefault();
     if (!replyText.trim()) return;
+const now = new Date();
+  const timeNow = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
     const newMessage = {
       id: Date.now(),
       sender: "STUDENT USER",
       role: 'student',
       text: replyText,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      time: timeNow,
       date: "Today"
     };
 
     setMessages([...messages, newMessage]);
-    setReplyText('');
-
-    // Simulasi balasan Staff (Bisa dihapus jika nanti ada Backend Staff)
-    setTimeout(() => {
-      setMessages(prev => [...prev, {
-        id: Date.now() + 1,
-        sender: 'STAFF SUPPORT',
-        role: 'staff',
-        text: 'Terima kasih atas tambahannya. Kami segera meninjau tiket Anda.',
-        time: "Just now",
-        date: "Today"
-      }]);
-    }, 2500);
+    setReplyText('');  
   };
 
   if (!ticket) return <div className="p-20 text-center font-manrope text-2xl font-bold">Ticket Not Found</div>;
@@ -96,12 +85,9 @@ const TicketDetailPage = ({ isLoggedIn, onLogout, tickets }) => {
                     {msg.sender.charAt(0)}
                   </div>
                   <div>
-                    {/* NAMA PENGIRIM (Dinamis: Jika student tampilkan Johanna D. atau nama lain) */}
                     <p className="text-[11px] font-black text-gray-900 uppercase tracking-tight font-manrope">
                       {msg.role === 'staff' ? msg.sender : "JOHANNA D."} 
                     </p>
-
-                    {/* STUDENT ID (Dinamis mengambil NIM dari data tiket) */}
                     <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest font-public">
                       {msg.role === 'staff' ? 'Support Team' : `STUDENT ID: ${ticket.nim}`} 
                     </p>
@@ -116,7 +102,7 @@ const TicketDetailPage = ({ isLoggedIn, onLogout, tickets }) => {
           ))}
         </div>
 
-        {/* REPLY BOX (KOLOM BALASAN) */}
+        {/* REPLY BOX*/}
         <div className="bg-white p-12 rounded-[3.5rem] shadow-xl border-t-8 border-[#0040A1] relative">
           <div className="flex items-center gap-2 mb-8 text-[#0040A1]">
             <HiChatAlt2 size={24} />

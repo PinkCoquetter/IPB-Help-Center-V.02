@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { 
   HiOutlineLockClosed, 
   HiAtSymbol, 
@@ -57,6 +57,8 @@ const LoginPage = ({ onLogin }) => {
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
+
+
                     <div className="space-y-2">
                         <label className="text-[10px] font-['Public_Sans'] font-black text-gray-400 uppercase tracking-widest ml-1">Username</label>
                         <div className="relative group">
@@ -65,40 +67,46 @@ const LoginPage = ({ onLogin }) => {
                         </div>
                     </div>
                     {/* Password Field */}
-                    <div className="space-y-2">
-                        <label className="text-[11px] font-['Public_Sans'] font-bold text-gray-400 uppercase tracking-[0.2em] ml-1">
-                            Password
-                        </label>
-                        <div className="relative group">
+                   <div className="space-y-2">
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 font-public">Password</label>
+                        
+                        <div className="relative h-[52px]"> 
                             <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-                                <HiOutlineLockClosed className="h-5 w-5 text-gray-400 group-focus-within:text-blue-600 transition-colors" />
+                                <HiOutlineLockClosed className="h-5 w-5 text-gray-400 transition-colors" />
                             </div>
 
-                            {/* Input Field - Type berubah dinamis */}
+                            {/* Input */}
                             <input
-                                type={showPassword ? "text" : "password"} // Logika ganti tipe
+                                type={showPassword ? "text" : "password"}
                                 name="password"
                                 value={formData.password}
                                 onChange={handleChange}
                                 placeholder="••••••••"
-                                className="block w-full pl-12 pr-12 py-5 bg-[#f1f4f9] border-none rounded-2xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder:text-gray-400 font-['Public_Sans'] font-medium"
+                                className="block w-full h-full pl-12 pr-12 bg-[#f1f4f9] border-none rounded-2xl text-sm focus:bg-white focus:ring-2 focus:ring-[#0040A1] outline-none transition-all placeholder:text-gray-400 font-medium"
                             />
 
-                            {/* Tombol Mata (Kanan) */}
                             <button
-                                type="button" // Wajib type button agar tidak trigger submit form
+                                type="button"
                                 onClick={() => setShowPassword(!showPassword)}
-                                className="absolute inset-y-0 right-0 pr-5 flex items-center text-gray-400 hover:text-blue-600 transition-colors"
+                                className="absolute inset-y-0 right-0 pr-5 flex items-center text-gray-400 hover:text-[#0040A1] transition-colors"
                             >
-                                {showPassword ? (
-                                    <HiOutlineEyeOff className="h-5 w-5" />
-                                ) : (
-                                    <HiOutlineEye className="h-5 w-5" />
-                                )}
+                                {showPassword ? <HiOutlineEyeOff className="h-5 w-5" /> : <HiOutlineEye className="h-5 w-5" />}
                             </button>
                         </div>
+
+                        <div className="pt-2 text-center">
+                            <Link to="/staff" className="text-[10px] text-gray-400 hover:text-[#0040A1] font-bold uppercase tracking-widest transition-colors">
+                                Sign In to Staff Portal
+                            </Link>
+                        </div>
                     </div>
-                    <button type="submit" className="w-full bg-gradient-to-r from-[#0040A1] to-[#0056D2] text-white py-5 rounded-2xl font-black text-sm shadow-xl transition-all hover:-translate-y-1">Sign In</button>
+
+                    <button 
+                        type="submit" 
+                        className="w-full bg-gradient-to-r from-[#0040A1] to-[#0056D2] text-white py-4 rounded-2xl font-black text-sm shadow-xl transition-all hover:-translate-y-1 active:scale-95 uppercase tracking-widest"
+                    >
+                        Sign In
+                    </button>
                 </form>
             </div>
         </div>

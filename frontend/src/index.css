@@ -1,7 +1,7 @@
-@import "tailwindcss";
-
-/* 1. Ambil font Manrope dari Google Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+@import "tailwindcss";
+@tailwind utilities;
+/* 1. Ambil font Manrope dari Google Fonts */
 
 /* 2. Daftarkan font ke dalam sistem Tailwind v4 */
 @theme {

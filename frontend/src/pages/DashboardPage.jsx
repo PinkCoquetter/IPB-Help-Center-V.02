@@ -3,17 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { HiPlus, HiX, HiOutlineArrowNarrowRight } from 'react-icons/hi';
 import { RiGraduationCapLine, RiUserSearchLine, RiBankLine, RiTrophyLine } from 'react-icons/ri';
-
-// Import gambar gedung IPB untuk banner
 import BgGedung from '../assets/image 3.png';
 
 const DashboardPage = ({ isLoggedIn, onLogout }) => {
   const navigate = useNavigate();
-  // 1. State untuk Tab FAQ yang aktif
   const [activeTab, setActiveTab] = useState('Akademik');
-  
-  // 2. State untuk Accordion (pertanyaan mana yang sedang terbuka)
-  const [openFaq, setOpenFaq] = useState(null);
+    const [openFaq, setOpenFaq] = useState(null);
 
   const categoryCards = [
     {
@@ -22,19 +17,19 @@ const DashboardPage = ({ isLoggedIn, onLogout }) => {
       links: ['Surat Izin Akademik', 'Surat Pengantar Mahasiswa', 'Surat Tugas Mahasiswa', 'Permohonan Surat Magang']
     },
     {
-      title: 'Layanan Pengembangan Karir',
+      title: 'Teknologi & Informasi',
       icon: <RiUserSearchLine />,
-      links: ['Info Magang Mahasiswa', 'Lowongan Kerja/Job Fair']
+      links: ['Penghapusan Storage Akun', 'Akun IPB, Email']
     },
     {
-      title: 'Admin Kemahasiswaan',
+      title: 'Keuangan & Pembayaran',
       icon: <RiBankLine />,
-      links: ['Proposal Sponsorship', 'Surat Undangan Kegiatan Mahasiswa', 'Penandatanganan Sertifikat']
+      links: [' Bantuan UKT', 'Informasi Beasiswa']
     },
     {
-      title: 'Lomba Mahasiswa dan SKPI',
+      title: 'Sarana & Prasarana',
       icon: <RiTrophyLine />,
-      links: ['Fasilitas Pendanaan Lomba', 'Informasi Lomba Kemahasiswaan']
+      links: ['Peminjaman Ruangan dan Alat', 'Layanan Kerusakan & Perbaikan']
     }
   ];
 
@@ -73,9 +68,9 @@ const DashboardPage = ({ isLoggedIn, onLogout }) => {
           </h1>
         </div>
 
-        {/* --- MY TICKETS SECTION (4 CARDS) --- */}
+        {/* --- MY TICKETS SECTION */}
         <div className="mb-24">
-          <h2 className="text-2xl font-bold text-gray-900 mb-8 tracking-tight">My Tickets</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-8 tracking-tight">Kategori Tiket</h2>
           <div className="grid grid-cols-4 gap-6">
             {categoryCards.map((card, i) => (
               <div key={i} className="bg-white p-8 rounded-[2rem] border border-gray-50 shadow-sm hover:shadow-md transition-all">
@@ -95,7 +90,7 @@ const DashboardPage = ({ isLoggedIn, onLogout }) => {
           </div>
         </div>
 
-        {/* --- FAQ SECTION --- */}
+        {/*FAQ*/}
         <div className="flex justify-center gap-4 mb-10">
           {['Akademik', 'IT', 'SPP', 'Fasilitas'].map((tab) => (
             <button
@@ -135,7 +130,6 @@ const DashboardPage = ({ isLoggedIn, onLogout }) => {
                     </div>
                   </button>
 
-                  {/* Konten Jawaban (Muncul di dalam div yang sama) */}
                   {isOpen && (
                     <div className="px-8 pb-8 -mt-2 animate-in fade-in slide-in-from-top-1 duration-300">
                       <p className="text-[12px] font-['Public_Sans'] font-medium text-[#424654] leading-relaxed">
@@ -147,11 +141,9 @@ const DashboardPage = ({ isLoggedIn, onLogout }) => {
               );
             })}
           </div>
-          {/* --- CTA BANNER WITH BACKGROUND IMAGE --- */}
           <div className="relative h-[180px] rounded-[2.5rem] overflow-hidden flex items-center shadow-xl">
             <img src={BgGedung} alt="Gedung IPB" className="absolute inset-0 w-full h-full object-cover" />
             
-            {/* Update Overlay Gradasi Biru agar lebih mirip desain Figma */}
             <div className="absolute inset-0 bg-gradient-to-r from-[#0040A1]/95 to-[#0056D2]/80"></div>
 
             <div className="relative z-10 w-full flex flex-col md:flex-row items-center justify-between px-14">

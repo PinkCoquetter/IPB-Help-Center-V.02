@@ -6,6 +6,8 @@ import DashboardPage from './pages/DashboardPage';
 import SubmitRequestPage from './pages/SubmitRequestPage';
 import MyTicketsPage from './pages/MyTicketsPage';
 import TicketDetailPage from './pages/TicketDetailPage';
+import StaffPortalPage from './pages/staff/StaffPortalPage'; 
+
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -18,9 +20,17 @@ function App() {
   ]);
 
   const addTicket = (newTicket) => {
+    const now = new Date();
+  const formattedDate = now.toLocaleDateString('en-US', { 
+    month: 'short', 
+    day: 'numeric', 
+    year: 'numeric'
+     });
     setTickets([newTicket, ...tickets]);
   };
-
+  const updateTicket = (id, updatedData) => {
+      setTickets(prev => prev.map(t => t.id === id ? { ...t, ...updatedData } : t));
+    };
   const handleLogin = () => setIsLoggedIn(true);
   const handleLogout = () => setIsLoggedIn(false);
 
@@ -30,7 +40,16 @@ function App() {
         <Route path="/" element={<IntroPage />} />
         <Route path="/login" element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <LoginPage onLogin={handleLogin} />} />
         <Route path="/dashboard" element={<DashboardPage isLoggedIn={isLoggedIn} onLogout={handleLogout} />} />
-        
+       
+       
+        {/* --- ROUTES STAFF (Tambahkan ini) --- */}
+         <Route 
+          path="/staff/*" 
+          element={<StaffPortalPage tickets={tickets} updateTicket={updateTicket} />} 
+        />
+
+
+
         {/* HALAMAN BUAT TIKET */}
         <Route path="/tickets/new" element={
           isLoggedIn ? <SubmitRequestPage isLoggedIn={isLoggedIn} onLogout={handleLogout} addTicket={addTicket} /> : <Navigate to="/login" />

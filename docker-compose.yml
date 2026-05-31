@@ -98,6 +98,8 @@ services:
         limits:
           cpus: '1.0'
           memory: 512M
+    ports:
+      - "8000:8000"
 
   # -------------------------
   # Layer 1: Frontend

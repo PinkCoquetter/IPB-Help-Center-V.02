@@ -1,6 +1,29 @@
-version: '3.8'
-
 services:
+  # -------------------------
+  # Layer 11: Load Balancing
+  # -------------------------
+  nginx:
+    image: nginx:alpine
+    container_name: ipb_helpdesk_nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_started
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+  # -------------------------
+  # Layer 3: Database & Storage
+  # -------------------------
   db:
     image: postgres:15-alpine
     container_name: ipb_helpdesk_db
@@ -12,34 +35,90 @@ services:
       - "5435:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
 
+  # -------------------------
+  # Layer 10: Caching
+  # -------------------------
+  redis:
+    image: redis:alpine
+    container_name: ipb_helpdesk_redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+  # -------------------------
+  # Layer 2: API & Backend
+  # -------------------------
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: ipb_helpdesk_backend
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
     volumes:
       - ./backend:/app
-    ports:
-      - "8000:8000"
     environment:
       - DATABASE_URL=postgresql+asyncpg://postgres:love@db:5432/ipb_helpdesk
+      - REDIS_URL=redis://redis:6379
       - SECRET_KEY=yaudalahyeah
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
 
+  # -------------------------
+  # Layer 1: Frontend
+  # -------------------------
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: ipb_helpdesk_frontend
-    ports:
-      - "5173:5173"
     environment:
-      - VITE_API_URL=http://localhost:8000/api
+      # In a real production environment behind NGINX, API requests are usually relative or via a public domain.
+      # We'll point this to the NGINX port 80.
+      - VITE_API_URL=http://localhost/api
     depends_on:
       - backend
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
 
 volumes:
   postgres_data:

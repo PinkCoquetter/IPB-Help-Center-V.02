@@ -2,6 +2,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from fastapi_cache.decorator import cache
 from app.core.database import get_db
 from app.models.faq import FAQ, FAQVisibilityEnum
 from app.models.user import User, RoleEnum
@@ -11,6 +12,7 @@ from app.dependencies.auth import require_roles, get_current_user
 router = APIRouter(prefix="/api/faqs", tags=["FAQ"])
 
 @router.get("/public", response_model=List[FAQResponse])
+@cache(expire=3600)
 async def list_public_faqs(search: Optional[str] = Query(None), db: AsyncSession = Depends(get_db)):
     query = select(FAQ).where(FAQ.is_active == True, FAQ.visibility == FAQVisibilityEnum.PUBLIC)
     result = await db.execute(query)

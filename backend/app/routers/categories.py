@@ -1,7 +1,8 @@
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import Boolean, Column, select
+from fastapi_cache.decorator import cache
 from app.core.database import get_db
 from app.models.ticket_category import TicketCategory
 from app.models.user import User, RoleEnum
@@ -11,6 +12,9 @@ from app.dependencies.auth import require_roles
 router = APIRouter(prefix="/api/categories", tags=["Categories"])
 
 @router.get("/", response_model=List[CategoryResponse])
+
+@cache(expire=3600)
+
 async def list_categories(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(TicketCategory).where(TicketCategory.is_active == True))
     return result.scalars().all()
@@ -42,5 +46,5 @@ async def delete_category(category_id: int, db: AsyncSession = Depends(get_db), 
     cat = result.scalar_one_or_none()
     if not cat:
         raise HTTPException(status_code=404, detail="Category not found")
-    cat.is_active = False
+    cat.is_active = Column(Boolean, default=False)
     await db.flush()

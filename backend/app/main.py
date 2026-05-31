@@ -1,22 +1,17 @@
-from fastapi import FastAPI
-from fastapi import Request
-from starlette.responses import JSONResponse
-
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 import os
+import logging
 
-from app.core.config import settings
-from app.core.rate_limit import limiter
-from app.middleware.security import SecurityHeadersMiddleware
-from app.middleware.logging import LoggingMiddleware
-
-from fastapi_cache import FastAPICache
-from fastapi_cache.backends.redis import RedisBackend
-from redis import asyncio as aioredis
-from slowapi import RateLimitExceeded
+# --- IMPORT SECURITY ---
+from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+from app.core.limiter import limiter  # Mengambil instance dari core agar sinkron
+from app.core.config import settings
 
 # Import models
 import app.models  # noqa: F401
@@ -26,28 +21,41 @@ from app.routers import auth, tickets, categories, services, faqs, notifications
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
-    redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
-    redis = aioredis.from_url(redis_url, encoding="utf8", decode_responses=True)
-    FastAPICache.init(RedisBackend(redis), prefix="helpdesk-cache")
     yield
-    print(" Server stopped.")
+    print("👋 Server stopped.")
 
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
-    description="IPB Help Center API - Refactored (Production Reality)",
+    description="IPB Help Center API - Secured version",
     lifespan=lifespan,
 )
 
-# Set up Rate Limiting
+# --- RATE LIMIT CONFIG ---
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
-# Add custom middlewares (order matters: innermost first in some setups, but Starlette executes top-to-bottom for request, bottom-to-top for response)
-app.add_middleware(SecurityHeadersMiddleware)
-app.add_middleware(LoggingMiddleware)
+# --- SECURITY HEADERS ---
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    return response
 
-# CORS
+# --- ERROR MASKING (AUDIT LOG) ---
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logging.error(f"AUDIT_LOG | Path: {request.url.path} | Error: {str(exc)}")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error. Silakan hubungi administrator."},
+    )
+
+# --- CORS ---
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
@@ -59,6 +67,7 @@ app.add_middleware(
 if os.path.exists(settings.UPLOAD_DIR):
     app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
 
+# --- ROUTERS ---
 app.include_router(auth.router)
 app.include_router(tickets.router)
 app.include_router(categories.router)

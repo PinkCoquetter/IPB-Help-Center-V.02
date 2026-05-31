@@ -1,87 +1,152 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
-import { HiOutlineDocumentDownload, HiOutlineArrowNarrowLeft } from 'react-icons/hi';
+import { HiOutlineCloudUpload, HiChatAlt2, HiOutlineArrowNarrowLeft } from 'react-icons/hi';
 
-const TicketDetailPage = () => {
+const TicketDetailPage = ({ isLoggedIn, onLogout, tickets }) => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  
+  // Mencari data tiket dari state global berdasarkan ID di URL
+  const ticket = tickets.find(t => t.id === id);
+
+  const [messages, setMessages] = useState([]);
+  const [replyText, setReplyText] = useState('');
+
+  // Inisialisasi pesan pertama dari deskripsi tiket
+  useEffect(() => {
+    if (ticket) {
+      setMessages([
+        {
+          id: 1,
+          sender: "STUDENT USER",
+          role: 'student',
+          text: ticket.desc,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          date: ticket.date
+        }
+      ]);
+    }
+  }, [ticket]);
+
+  const handleSendReply = (e) => {
+    e.preventDefault();
+    if (!replyText.trim()) return;
+
+    const newMessage = {
+      id: Date.now(),
+      sender: "STUDENT USER",
+      role: 'student',
+      text: replyText,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      date: "Today"
+    };
+
+    setMessages([...messages, newMessage]);
+    setReplyText('');
+
+    // Simulasi balasan Staff (Bisa dihapus jika nanti ada Backend Staff)
+    setTimeout(() => {
+      setMessages(prev => [...prev, {
+        id: Date.now() + 1,
+        sender: 'STAFF SUPPORT',
+        role: 'staff',
+        text: 'Terima kasih atas tambahannya. Kami segera meninjau tiket Anda.',
+        time: "Just now",
+        date: "Today"
+      }]);
+    }, 2500);
+  };
+
+  if (!ticket) return <div className="p-20 text-center font-manrope text-2xl font-bold">Ticket Not Found</div>;
+
   return (
-    <div className="min-h-screen bg-[#f8fafc] font-manrope">
+    <div className="min-h-screen bg-[#F8FAFC] font-sans">
       <Navbar isLoggedIn={isLoggedIn} onLogout={onLogout} />
-      
+
       <main className="max-w-5xl mx-auto px-10 pt-32 pb-20">
-        {/* Back Button */}
-        <button className="flex items-center gap-2 text-gray-400 hover:text-blue-600 font-bold text-sm mb-8 transition-colors">
-          <HiOutlineArrowNarrowLeft /> Back to Tickets
+        <button 
+          onClick={() => navigate('/tickets')} 
+          className="flex items-center gap-2 text-gray-400 hover:text-[#0040A1] font-bold text-sm mb-8 transition-colors uppercase tracking-widest font-manrope"
+        >
+          <HiOutlineArrowNarrowLeft /> Kembali
         </button>
 
-        {/* Header Ticket */}
-        <div className="flex justify-between items-start mb-10">
-          <div>
-            <h1 className="text-4xl font-extrabold text-gray-900 mb-3">Pembayaran UKT Gagal</h1>
-            <div className="flex items-center gap-3">
-              <span className="text-[10px] font-black px-3 py-1 bg-blue-50 text-blue-600 border border-blue-100 rounded">OPEN #TKT-9420</span>
-              <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Oct 12, 2024</span>
+        {/* HEADER TIKET */}
+        <div className="mb-12">
+          <h1 className="text-5xl font-[800] text-gray-900 mb-4 tracking-tighter font-manrope">{ticket.title}</h1>
+          <div className="flex items-center gap-4">
+            <span className="text-[10px] font-black px-3 py-1 bg-[#0040A1] text-white rounded uppercase tracking-widest">{ticket.status}</span>
+            <span className="text-[10px] font-bold text-gray-300 tracking-[0.3em]">#{ticket.id}</span>
+            <div className="flex-grow"></div>
+            <div className="text-right">
+                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Submitted on</p>
+                <p className="text-sm font-bold text-gray-900">{ticket.date}</p>
             </div>
           </div>
         </div>
 
-        {/* Summary Card */}
-        <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-50 overflow-hidden mb-8">
-          <div className="p-10 border-l-4 border-blue-500">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Submission Summary</p>
-            <p className="text-gray-700 font-medium leading-relaxed italic">
-              "Pembayaran UKT tidak bisa dilakukan, saya tidak tahu alasannya apa. Mohon bantuannya segera karena tenggat waktu sudah dekat."
-            </p>
-          </div>
+        {/* LIST PESAN / THREAD */}
+        <div className="space-y-8 mb-16">
+          {messages.map((msg) => (
+            <div key={msg.id} className={`bg-white p-8 md:p-10 rounded-[2.5rem] border shadow-sm ${msg.role === 'staff' ? 'bg-blue-50/20 border-blue-100 shadow-blue-900/5' : 'border-gray-50'}`}>
+              <div className="flex justify-between items-start mb-6 border-b border-gray-50 pb-4">
+                <div className="flex items-center gap-4">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold ${msg.role === 'staff' ? 'bg-[#0040A1] text-white' : 'bg-gray-100 text-gray-500'}`}>
+                    {msg.sender.charAt(0)}
+                  </div>
+                  <div>
+                    {/* NAMA PENGIRIM (Dinamis: Jika student tampilkan Johanna D. atau nama lain) */}
+                    <p className="text-[11px] font-black text-gray-900 uppercase tracking-tight font-manrope">
+                      {msg.role === 'staff' ? msg.sender : "JOHANNA D."} 
+                    </p>
+
+                    {/* STUDENT ID (Dinamis mengambil NIM dari data tiket) */}
+                    <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest font-public">
+                      {msg.role === 'staff' ? 'Support Team' : `STUDENT ID: ${ticket.nim}`} 
+                    </p>
+                  </div>
+                </div>
+                <p className="text-[10px] font-bold text-gray-300 uppercase">{msg.date}, {msg.time}</p>
+              </div>
+              <p className={`text-sm font-medium leading-relaxed px-2 ${msg.role === 'staff' ? 'text-gray-800' : 'text-gray-500 italic'}`}>
+                "{msg.text}"
+              </p>
+            </div>
+          ))}
         </div>
 
-        {/* Details Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-          <div className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-gray-50 space-y-8">
-             <div className="space-y-1">
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Subject</p>
-                <p className="text-sm font-bold text-gray-900">How can we help?</p>
-             </div>
-             <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Category</p>
-                  <p className="text-sm font-bold text-gray-900">Select a topic</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Student ID</p>
-                  <p className="text-sm font-bold text-gray-900">G6401231000</p>
-                </div>
-             </div>
+        {/* REPLY BOX (KOLOM BALASAN) */}
+        <div className="bg-white p-12 rounded-[3.5rem] shadow-xl border-t-8 border-[#0040A1] relative">
+          <div className="flex items-center gap-2 mb-8 text-[#0040A1]">
+            <HiChatAlt2 size={24} />
+            <span className="text-[11px] font-black uppercase tracking-widest italic font-manrope">Kirim Balasan / Reply Ticket</span>
           </div>
 
-          <div className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-gray-50">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-6">Attachments</p>
-            <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100 hover:bg-gray-100 cursor-pointer transition-colors">
-              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-blue-500 shadow-sm">
-                <HiOutlineDocumentDownload size={20} />
-              </div>
-              <div className="flex-grow">
-                <p className="text-xs font-bold text-gray-900">Bukti_Pembayaran_Gagal.pdf</p>
-                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">2.4 MB • PDF File</p>
+          <form onSubmit={handleSendReply} className="space-y-10">
+            <textarea 
+              rows="4" value={replyText} onChange={(e) => setReplyText(e.target.value)}
+              placeholder="Tulis tanggapan atau pertanyaan anda di sini..." 
+              className="w-full px-8 py-6 bg-[#f8fafc] rounded-[2rem] border-none focus:ring-2 focus:ring-[#0040A1] outline-none text-sm font-medium transition-all resize-none"
+            ></textarea>
+
+            {/* ATTACHMENT DI BALASAN */}
+            <div className="space-y-4">
+              <label className="text-[10px] font-black text-gray-800 uppercase tracking-[0.2em] ml-1 italic">Attachments (Optional)</label>
+              <div className="border-2 border-dashed border-gray-100 rounded-[2rem] p-10 flex flex-col items-center justify-center bg-[#f8fafc] hover:bg-gray-50 transition-colors cursor-pointer group">
+                <HiOutlineCloudUpload className="text-3xl text-gray-300 group-hover:text-[#0040A1] mb-2" />
+                <p className="text-xs font-bold text-gray-500 font-public tracking-tight">Tambah file pendukung balasan</p>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Detailed Description */}
-        <div className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-gray-50">
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Detailed Description</p>
-          <p className="text-sm text-gray-500 leading-relaxed">
-            Saya sudah mencoba melakukan pembayaran melalui Mobile Banking dan ATM, namun muncul pesan error "Transaksi Gagal - Hubungi Pihak Terkait". 
-            Dana di rekening saya mencukupi. Saya sudah melampirkan bukti screenshot error tersebut.
-          </p>
+            <div className="flex items-center justify-between pt-8 border-t border-gray-50">
+              <button type="submit" className="bg-[#0040A1] text-white px-14 py-4 rounded-2xl font-bold text-sm uppercase tracking-widest shadow-lg hover:bg-blue-800 transition-all ml-auto font-manrope">
+                Kirim
+              </button>
+            </div>
+          </form>
         </div>
       </main>
-
-      <footer className="py-12 text-center">
-        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.3em]">
-          © 2026 THE ACADEMIC SANCTUARY, IPB UNIVERSITY
-        </p>
-      </footer>
     </div>
   );
 };

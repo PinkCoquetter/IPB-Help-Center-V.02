@@ -2,7 +2,7 @@ import asyncio
 from app.core.database import AsyncSessionLocal
 from app.models.user import User, RoleEnum
 from app.models.ticket_category import TicketCategory
-from app.models.ticket import Ticket, TicketStatus
+from app.models.ticket import Ticket, TicketStatusEnum
 from app.models.faq import FAQ
 from app.core.security import hash_password
 
@@ -58,29 +58,32 @@ async def seed():
         # 3. Buat Data Tiket Percobaan
         print("Membuat Tiket Dummy...")
         ticket_1 = Ticket(
+            ticket_number="TKT-001",
             title="Pembayaran UKT Gagal via BNI",
             description="Saya sudah transfer UKT via BNI Mobile tapi di SIMAK masih berstatus belum bayar. Mohon bantuannya.",
-            status=TicketStatus.OPEN,
+            status=TicketStatusEnum.OPEN,
             category_id=cat_keuangan.id,
             student_id=student_1.id
         )
 
         ticket_2 = Ticket(
+            ticket_number="TKT-002",
             title="KTM Hilang di Kantin Stekpi",
             description="KTM saya hilang kemarin, bagaimana prosedur pembuatan KTM baru? Apakah ada biaya ganti?",
-            status=TicketStatus.IN_PROGRESS,
+            status=TicketStatusEnum.IN_PROGRESS,
             category_id=cat_akademik.id,
             student_id=student_2.id,
-            assigned_to_id=staff_akademik.id
+            assigned_staff_id=staff_akademik.id
         )
 
         ticket_3 = Ticket(
+            ticket_number="TKT-003",
             title="Lupa Password IDB IPB",
             description="Saya lupa password email @apps.ipb.ac.id saya, bagaimana cara resetnya?",
-            status=TicketStatus.RESOLVED,
+            status=TicketStatusEnum.RESOLVED,
             category_id=cat_it.id,
             student_id=student_1.id,
-            assigned_to_id=admin.id
+            assigned_staff_id=admin.id
         )
 
         session.add_all([ticket_1, ticket_2, ticket_3])

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { HiOutlineCloudUpload, HiOutlineShieldCheck } from 'react-icons/hi';
@@ -11,6 +11,23 @@ const SubmitRequestPage = ({ isLoggedIn, onLogout, addTicket }) => {
     nim: '',
     description: ''
   });
+  const [categories, setCategories] = useState([]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+        const response = await fetch(`${apiUrl}/api/categories/`);
+        if (response.ok) {
+          const data = await response.json();
+          setCategories(data);
+        }
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -77,10 +94,10 @@ navigate(`/tickets/${ticketId}`);
               <div className="space-y-4">
                 <label className="text-[10px] font-black text-gray-800 uppercase tracking-[0.2em] ml-1">Topik</label>
                 <select name="topic" value={ticketData.topic} onChange={handleChange} className="w-full px-8 py-5 bg-[#f8fafc] rounded-[1.5rem] border-none focus:ring-2 focus:ring-[#0040A1] outline-none text-sm font-medium cursor-pointer">
-                  <option>Pilh topik permasalahan</option>
-                  <option>Akademik</option>
-                  <option>IT Support</option>
-                  <option>UKT / Keuangan</option>
+                  <option value="Select a topic">Pilih topik permasalahan</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.name}>{cat.name}</option>
+                  ))}
                 </select>
               </div>
             </div>

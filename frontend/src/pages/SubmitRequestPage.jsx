@@ -1,13 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { HiOutlineCloudUpload, HiOutlineShieldCheck } from 'react-icons/hi';
 
 const SubmitRequestPage = ({ isLoggedIn, onLogout, addTicket }) => {
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Ambil parameter dari URL (misal: ?title=Surat...&topic=Akademik...)
+  const queryParams = new URLSearchParams(location.search);
+  const initialTitle = queryParams.get('title') || '';
+  const initialTopic = queryParams.get('topic') || 'Select a topic';
+
   const [ticketData, setTicketData] = useState({
-    title: '',
-    topic: 'Select a topic',
+    title: initialTitle,
+    topic: initialTopic,
     nim: '',
     description: ''
   });

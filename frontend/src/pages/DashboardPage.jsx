@@ -13,21 +13,25 @@ const DashboardPage = ({ isLoggedIn, onLogout }) => {
   const categoryCards = [
     {
       title: 'Layanan Permohonan Surat',
+      topic: 'Akademik dan Kelulusan',
       icon: <RiGraduationCapLine />,
       links: ['Surat Izin Akademik', 'Surat Pengantar Mahasiswa', 'Surat Tugas Mahasiswa', 'Permohonan Surat Magang']
     },
     {
       title: 'Teknologi & Informasi',
+      topic: 'Layanan IT dan Digital',
       icon: <RiUserSearchLine />,
       links: ['Penghapusan Storage Akun', 'Akun IPB, Email']
     },
     {
       title: 'Keuangan & Pembayaran',
+      topic: 'Keuangan dan Beasiswa',
       icon: <RiBankLine />,
-      links: [' Bantuan UKT', 'Informasi Beasiswa']
+      links: ['Bantuan UKT', 'Informasi Beasiswa']
     },
     {
       title: 'Sarana & Prasarana',
+      topic: 'Fasilitas dan Infrastruktur (Sarpras)',
       icon: <RiTrophyLine />,
       links: ['Peminjaman Ruangan dan Alat', 'Layanan Kerusakan & Perbaikan']
     }
@@ -80,9 +84,13 @@ const DashboardPage = ({ isLoggedIn, onLogout }) => {
                 <h3 className="text-[15px] font-bold text-gray-800 leading-tight mb-6">{card.title}</h3>
                 <div className="space-y-3">
                   {card.links.map((link, j) => (
-                    <a key={j} href="#" className="flex items-center gap-2 text-[13px] font-['Public_Sans'] font-bold text-[#0040A1]">
+                    <button 
+                      key={j} 
+                      onClick={() => navigate(`/tickets/new?title=${encodeURIComponent(link)}&topic=${encodeURIComponent(card.topic)}`)} 
+                      className="flex items-center gap-2 text-[13px] font-['Public_Sans'] font-bold text-[#0040A1] text-left hover:underline w-full"
+                    >
                       <HiOutlineArrowNarrowRight className="shrink-0" /> {link}
-                    </a>
+                    </button>
                   ))}
                 </div>
               </div>

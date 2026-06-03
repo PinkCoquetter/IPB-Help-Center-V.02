@@ -4,6 +4,7 @@ import {
   CheckCircle, Loader2, Paperclip, Trash2, 
   AlertTriangle, AlertCircle, MessageSquare 
 } from 'lucide-react';
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 
 export const StaffTicketDetailView = ({ ticket, onBack, updateTicket }) => {
@@ -31,7 +32,7 @@ export const StaffTicketDetailView = ({ ticket, onBack, updateTicket }) => {
   const [isSavingStatus, setIsSavingStatus] = useState(false);
   const [isSendingReply, setIsSendingReply] = useState(false);
   const [notification, setNotification] = useState(null);
-  const [hasShownDraftWarning, setHasShownDraftWarning] = useState(false);
+  // unused state removed
 
   // --- LOGIC NOTIFIKASI ---
   const showNotification = (type, message) => {

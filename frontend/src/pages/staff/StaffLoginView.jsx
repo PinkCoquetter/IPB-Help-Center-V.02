@@ -20,7 +20,7 @@ export const StaffLoginView = ({ onLoginSuccess }) => {
             }, 1000);
         } else {
             setMessage({ type: 'error', text: 'Staff credentials invalid.' });
-        }adm
+        }
     };
 
     return (

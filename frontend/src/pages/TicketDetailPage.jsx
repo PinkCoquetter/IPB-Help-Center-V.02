@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { HiOutlineCloudUpload, HiChatAlt2, HiOutlineArrowNarrowLeft } from 'react-icons/hi';
@@ -10,23 +10,18 @@ const TicketDetailPage = ({ isLoggedIn, onLogout, tickets }) => {
   // Mencari data tiket dari state global berdasarkan ID di URL
   const ticket = tickets.find(t => t.id === id);
 
-  const [messages, setMessages] = useState([]);
-  const [replyText, setReplyText] = useState('');
-
-  useEffect(() => {
-    if (ticket) {
-      setMessages([
-        {
-          id: 1,
-          sender: "STUDENT USER",
-          role: 'student',
-          text: ticket.desc,
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          date: ticket.date
-        }
-      ]);
+  const [messages, setMessages] = useState(ticket ? [
+    {
+      id: 1,
+      sender: "STUDENT USER",
+      role: 'student',
+      text: ticket.desc,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      date: ticket.date
     }
-  }, [ticket]);
+  ] : []);
+
+  const [replyText, setReplyText] = useState('');
 
   const handleSendReply = (e) => {
     e.preventDefault();

@@ -20,12 +20,7 @@ function App() {
   ]);
 
   const addTicket = (newTicket) => {
-    const now = new Date();
-  const formattedDate = now.toLocaleDateString('en-US', { 
-    month: 'short', 
-    day: 'numeric', 
-    year: 'numeric'
-     });
+    // Data tiket baru sudah diurus di dalam SubmitRequestPage
     setTickets([newTicket, ...tickets]);
   };
   const updateTicket = (id, updatedData) => {

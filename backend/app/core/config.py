@@ -8,6 +8,13 @@ class Settings(BaseSettings):
 
     # Defaults that can be overridden by .env
     DATABASE_URL: str = "postgresql+asyncpg://postgres:love@localhost:5432/ipb-helpdesk-postgres"
+
+    @property
+    def get_database_url(self) -> str:
+        # Railway injects `postgresql://`, but SQLAlchemy async requires `postgresql+asyncpg://`
+        if self.DATABASE_URL.startswith("postgresql://"):
+            return self.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return self.DATABASE_URL
     
     SECRET_KEY: str = "yaudahlahyeah"
     ALGORITHM: str = "HS256"

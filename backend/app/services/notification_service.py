@@ -28,4 +28,4 @@ async def mark_read(notif_id: int, user: User, db: AsyncSession):
     )
     notif = result.scalar_one_or_none()
     if notif:
-        notif.is_read = True
+        notif.is_read = True  # type: ignore

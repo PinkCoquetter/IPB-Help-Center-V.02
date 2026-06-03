@@ -15,7 +15,7 @@ class Notification(Base):
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String(255), nullable=False)
     message = Column(Text, nullable=False)
-    type = Column(SAEnum(NotificationTypeEnum), nullable=False)
+    type = Column(SAEnum(NotificationTypeEnum), nullable=False)  # type: ignore
     is_read = Column(Boolean, default=False)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     ticket_id = Column(Integer, ForeignKey("tickets.id", ondelete="CASCADE"), nullable=True)

@@ -17,7 +17,7 @@ class User(Base):
     full_name = Column(String(100), nullable=False)
     email = Column(String(150), unique=True, nullable=False, index=True)
     hashed_password = Column(String(255), nullable=False)
-    role = Column(SAEnum(RoleEnum), nullable=False, default=RoleEnum.STUDENT)
+    role = Column(SAEnum(RoleEnum), nullable=False, default=RoleEnum.STUDENT)  # type: ignore
     division_id = Column(Integer, ForeignKey("divisions.id", ondelete="SET NULL"), nullable=True)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

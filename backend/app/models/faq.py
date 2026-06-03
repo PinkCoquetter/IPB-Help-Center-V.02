@@ -14,6 +14,6 @@ class FAQ(Base):
     question = Column(Text, nullable=False)
     answer = Column(Text, nullable=False)
     category = Column(String(100), nullable=False, default="Umum")
-    visibility = Column(SAEnum(FAQVisibilityEnum), nullable=False, default=FAQVisibilityEnum.PUBLIC)
+    visibility = Column(SAEnum(FAQVisibilityEnum), nullable=False, default=FAQVisibilityEnum.PUBLIC)  # type: ignore
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

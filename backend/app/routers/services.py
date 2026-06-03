@@ -47,5 +47,5 @@ async def delete_service(service_id: int, db: AsyncSession = Depends(get_db), cu
     svc = result.scalar_one_or_none()
     if not svc:
         raise HTTPException(status_code=404, detail="Service not found")
-    svc.is_active = False
+    svc.is_active = False  # type: ignore
     await db.flush()

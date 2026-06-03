@@ -24,8 +24,8 @@ class Ticket(Base):
     ticket_number = Column(String(30), unique=True, nullable=False, index=True)
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=False)
-    status = Column(SAEnum(TicketStatusEnum), default=TicketStatusEnum.OPEN, nullable=False)
-    priority = Column(SAEnum(PriorityEnum), default=PriorityEnum.MEDIUM, nullable=False)
+    status = Column(SAEnum(TicketStatusEnum), default=TicketStatusEnum.OPEN, nullable=False)  # type: ignore
+    priority = Column(SAEnum(PriorityEnum), default=PriorityEnum.MEDIUM, nullable=False)  # type: ignore
 
     # Foreign Keys
     student_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
@@ -63,8 +63,8 @@ class TicketHistory(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     ticket_id = Column(Integer, ForeignKey("tickets.id", ondelete="CASCADE"), nullable=False)
-    old_status = Column(SAEnum(TicketStatusEnum), nullable=True)
-    new_status = Column(SAEnum(TicketStatusEnum), nullable=False)
+    old_status = Column(SAEnum(TicketStatusEnum), nullable=True)  # type: ignore
+    new_status = Column(SAEnum(TicketStatusEnum), nullable=False)  # type: ignore
     changed_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     note = Column(Text, nullable=True)
     changed_at = Column(DateTime(timezone=True), server_default=func.now())

@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession

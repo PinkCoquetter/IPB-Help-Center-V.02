@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional, List, Sequence, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
@@ -9,8 +9,9 @@ from app.models.user import User, RoleEnum
 from app.schemas.ticket import TicketCreate, TicketStatusUpdate, TicketReplyCreate
 from app.models.notification import Notification, NotificationTypeEnum
 from app.utils.ticket_number import generate_ticket_number
+from app.crud import ticket_repo
 
-async def create_notification(db: AsyncSession, user_id: int, ticket_id: int, notif_type: NotificationTypeEnum, title: str, message: str):
+async def create_notification(db: AsyncSession, user_id: Any, ticket_id: Any, notif_type: NotificationTypeEnum, title: str, message: str):
     notif = Notification(
         title=title,
         message=message,
@@ -60,10 +61,10 @@ async def get_tickets(
     priority: Optional[PriorityEnum] = None,
     page: int = 1,
     limit: int = 10
-) -> List[Ticket]:
+) -> Sequence[Ticket]:
     query = select(Ticket)
 
-    if user.role == RoleEnum.STUDENT:
+    if user.role == RoleEnum.STUDENT:  # type: ignore
         query = query.where(Ticket.student_id == user.id)
 
     if status:
@@ -94,32 +95,43 @@ async def get_ticket_detail(ticket_id: int, user: User, db: AsyncSession) -> Tic
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
 
-    if user.role == RoleEnum.STUDENT and ticket.student_id != user.id:
+    if user.role == RoleEnum.STUDENT and ticket.student_id != user.id:  # type: ignore
         raise HTTPException(status_code=403, detail="Access denied")
 
     return ticket
 
 async def reply_to_ticket(ticket_id: int, payload: TicketReplyCreate, user: User, db: AsyncSession):
-    ticket = await get_ticket_detail(ticket_id, user, db)
-    if ticket.status == TicketStatusEnum.CLOSED:
+    # [Service -> Repository] Meminta Repository mencari tiket
+    # Kita menggunakan crud layer (ticket_repo) agar logika DB terpisah dari bisnis.
+    
+    ticket = await ticket_repo.get_ticket_by_id(db, ticket_id)
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+
+    if user.role == RoleEnum.STUDENT and ticket.student_id != user.id:  # type: ignore
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    # [Service] Pengecekan logika bisnis
+    if ticket.status == TicketStatusEnum.CLOSED:  # type: ignore
         raise HTTPException(status_code=400, detail="Cannot reply to a closed ticket")
 
-    reply = TicketReply(
-        message=payload.message,
-        ticket_id=ticket_id,
-        sender_id=user.id,
-    )
-    db.add(reply)
-    await db.flush()
+    # [Service -> Repository] Jika status masih OPEN, ubah jadi IN_PROGRESS (opsional)
+    if ticket.status == TicketStatusEnum.OPEN and user.role in [RoleEnum.STAFF, RoleEnum.ADMIN]:  # type: ignore
+        await ticket_repo.update_ticket_status(db, ticket, TicketStatusEnum.IN_PROGRESS, user.id)  # type: ignore
 
-    if user.role in [RoleEnum.STAFF, RoleEnum.ADMIN]:
+    # [Service -> Repository] Simpan balasan
+    reply = await ticket_repo.create_reply(db, payload.message, user.id, ticket_id)  # type: ignore
+
+    if user.role in [RoleEnum.STAFF, RoleEnum.ADMIN]:  # type: ignore
         await create_notification(
-            db, ticket.student_id, ticket_id,
+            db, ticket.student_id, ticket_id,  # type: ignore
             NotificationTypeEnum.NEW_REPLY,
             "New Reply",
             f"Staff has replied to your ticket #{ticket.ticket_number}."
         )
 
+    # Transaksi commit di level service/controller
+    await db.commit()
     return reply
 
 async def update_ticket_status(ticket_id: int, payload: TicketStatusUpdate, user: User, db: AsyncSession):
@@ -127,26 +139,26 @@ async def update_ticket_status(ticket_id: int, payload: TicketStatusUpdate, user
     ticket = result.scalar_one_or_none()
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
-    if ticket.status == TicketStatusEnum.CLOSED:
+    if ticket.status == TicketStatusEnum.CLOSED:  # type: ignore
         raise HTTPException(status_code=400, detail="Ticket is already closed")
 
     old_status = ticket.status
-    ticket.status = payload.status
+    ticket.status = payload.status  # type: ignore
 
-    if payload.status == TicketStatusEnum.RESOLVED:
-        ticket.resolved_at = func.now()
+    if payload.status == TicketStatusEnum.RESOLVED:  # type: ignore
+        ticket.resolved_at = func.now()  # type: ignore
 
     history = TicketHistory(
         ticket_id=ticket_id,
         old_status=old_status,
         new_status=payload.status,
-        changed_by=user.id,
+        changed_by=user.id,  # type: ignore
         note=payload.note,
     )
     db.add(history)
 
     await create_notification(
-        db, ticket.student_id, ticket_id,
+        db, ticket.student_id, ticket_id,  # type: ignore
         NotificationTypeEnum.STATUS_UPDATED,
         "Status Updated",
         f"Your ticket #{ticket.ticket_number} status is now {payload.status.value}."

@@ -11,12 +11,13 @@ const SubmitRequestPage = ({ isLoggedIn, onLogout, addTicket }) => {
     nim: '',
     description: ''
   });
+  const [attachment, setAttachment] = useState(null);
   const [categories, setCategories] = useState([]);
 
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+        const apiUrl = import.meta.env.VITE_API_URL || 'https://ipb-help-center-v02-production.up.railway.app';
         const response = await fetch(`${apiUrl}/api/categories/`);
         if (response.ok) {
           const data = await response.json();
@@ -32,6 +33,12 @@ const SubmitRequestPage = ({ isLoggedIn, onLogout, addTicket }) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setTicketData({ ...ticketData, [name]: value });
+  };
+
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setAttachment(e.target.files[0]);
+    }
   };
 
   const handleSubmit = (e) => {
@@ -115,11 +122,18 @@ navigate(`/tickets/${ticketId}`);
             {/* Attachment */}
             <div className="space-y-4">
               <label className="text-[10px] font-black text-gray-800 uppercase tracking-[0.2em] ml-1">Dokumen Pendukung (Opsional)</label>
-              <div className="border-2 border-dashed border-gray-100 rounded-[2rem] p-16 flex flex-col items-center justify-center bg-[#f8fafc] hover:bg-gray-50 transition-colors cursor-pointer group">
+              <label className="border-2 border-dashed border-gray-200 rounded-[2rem] p-16 flex flex-col items-center justify-center bg-[#f8fafc] hover:bg-gray-50 transition-colors cursor-pointer group relative">
+                <input type="file" onChange={handleFileChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept=".pdf,.docx,.png,.jpg,.jpeg" />
                 <HiOutlineCloudUpload className="text-4xl text-gray-300 group-hover:text-[#0040A1] transition-colors mb-4" />
-                <p className="text-sm font-bold text-gray-500 font-public">Klik untuk menambahkan file</p>
-                <p className="text-[10px] text-gray-400 mt-1 uppercase tracking-widest font-public">PDF, DOCX, PNG atau JPG (max 10MB)</p>
-              </div>
+                {attachment ? (
+                  <p className="text-sm font-bold text-[#0040A1] font-public">{attachment.name}</p>
+                ) : (
+                  <>
+                    <p className="text-sm font-bold text-gray-500 font-public">Klik atau seret file ke sini</p>
+                    <p className="text-[10px] text-gray-400 mt-1 uppercase tracking-widest font-public">PDF, DOCX, PNG atau JPG (max 10MB)</p>
+                  </>
+                )}
+              </label>
             </div>
 
             {/* Footer Form */}

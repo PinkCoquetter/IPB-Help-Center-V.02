@@ -10,8 +10,9 @@ import StaffPortalPage from './pages/staff/StaffPortalPage';
 
 
 function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  
+  const [isLoggedIn, setIsLoggedIn] = useState(() => {
+    return localStorage.getItem('isLoggedIn') === 'true';
+  });
   // Data Tiket Global (Akan reset jika refresh)
   const [tickets, setTickets] = useState([
     { id: 'TKT-9420', status: 'OPEN', title: 'Pembayaran UKT Gagal', desc: 'Pembayaran UKT tidak bisa dilakukan, saya tidak tahu alasannya apa', date: 'Oct 12, 2024' },
@@ -26,8 +27,14 @@ function App() {
   const updateTicket = (id, updatedData) => {
       setTickets(prev => prev.map(t => t.id === id ? { ...t, ...updatedData } : t));
     };
-  const handleLogin = () => setIsLoggedIn(true);
-  const handleLogout = () => setIsLoggedIn(false);
+  const handleLogin = () => {
+    setIsLoggedIn(true);
+    localStorage.setItem('isLoggedIn', 'true');
+  };
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    localStorage.removeItem('isLoggedIn');
+  };
 
   return (
     <Router>

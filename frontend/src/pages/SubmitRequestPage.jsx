@@ -35,7 +35,17 @@ const SubmitRequestPage = ({ isLoggedIn, onLogout, addTicket }) => {
 
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
-      setAttachment(e.target.files[0]);
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setAttachment({
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          url: event.target.result
+        });
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -51,7 +61,8 @@ const SubmitRequestPage = ({ isLoggedIn, onLogout, addTicket }) => {
       const attachmentsArray = attachment ? [{
         name: attachment.name,
         size: (attachment.size / 1024).toFixed(0) + ' KB',
-        type: attachment.type
+        type: attachment.type,
+        url: attachment.url
       }] : [];
 
       addTicket({

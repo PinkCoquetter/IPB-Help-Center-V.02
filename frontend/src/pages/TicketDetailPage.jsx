@@ -25,12 +25,23 @@ const TicketDetailPage = ({ isLoggedIn, onLogout, tickets, updateTicket }) => {
     if (e.target.files) addFiles(e.target.files);
   };
 
-  const addFiles = (files) => {
-    const newFiles = Array.from(files).map(file => ({
-      name: file.name,
-      size: (file.size / 1024).toFixed(0) + ' KB',
-      type: file.type
-    }));
+  const addFiles = async (files) => {
+    const filePromises = Array.from(files).map(file => {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          resolve({
+            name: file.name,
+            size: (file.size / 1024).toFixed(0) + ' KB',
+            type: file.type,
+            url: e.target.result
+          });
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+
+    const newFiles = await Promise.all(filePromises);
     setUploadedFiles(prev => [...prev, ...newFiles]);
   };
 
@@ -116,15 +127,15 @@ const TicketDetailPage = ({ isLoggedIn, onLogout, tickets, updateTicket }) => {
               {msg.attachments && msg.attachments.length > 0 && (
                 <div className="grid grid-cols-2 gap-4 mt-6 border-t border-gray-50 pt-6">
                   {msg.attachments.map((file, idx) => (
-                    <div key={idx} className="flex items-center gap-3 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm">
-                      <div className="w-10 h-10 bg-blue-50 text-[#0040A1] rounded-xl flex items-center justify-center">
+                    <a key={idx} href={file.url} download={file.name} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm hover:border-[#0040A1] hover:shadow-md transition-all cursor-pointer group">
+                      <div className="w-10 h-10 bg-blue-50 text-[#0040A1] rounded-xl flex items-center justify-center group-hover:bg-[#0040A1] group-hover:text-white transition-colors">
                         <FileText size={20} />
                       </div>
                       <div className="overflow-hidden">
-                        <p className="text-xs font-bold text-gray-800 truncate">{file.name}</p>
+                        <p className="text-xs font-bold text-gray-800 truncate group-hover:text-[#0040A1] transition-colors">{file.name}</p>
                         <p className="text-[10px] text-gray-400 font-bold uppercase">{file.size}</p>
                       </div>
-                    </div>
+                    </a>
                   ))}
                 </div>
               )}

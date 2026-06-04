@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { HiPlus, HiX, HiOutlineArrowNarrowRight } from 'react-icons/hi';
@@ -9,6 +9,27 @@ const DashboardPage = ({ isLoggedIn, onLogout }) => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('Akademik');
     const [openFaq, setOpenFaq] = useState(null);
+  const [allFaqs, setAllFaqs] = useState([]);
+
+  // Fetch FAQs dari API backend
+  useEffect(() => {
+    const fetchFaqs = async () => {
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'https://ipb-help-center-v02-production.up.railway.app';
+        const response = await fetch(`${apiUrl}/api/faqs/public`);
+        if (response.ok) {
+          const data = await response.json();
+          setAllFaqs(data);
+        }
+      } catch (error) {
+        console.error("Error fetching FAQs:", error);
+      }
+    };
+    fetchFaqs();
+  }, []);
+
+  // Filter FAQ berdasarkan tab aktif (menggunakan field `category` dari database)
+  const filteredFaqs = allFaqs.filter(faq => faq.category === activeTab);
 
   const categoryCards = [
     {
@@ -36,25 +57,6 @@ const DashboardPage = ({ isLoggedIn, onLogout }) => {
       links: ['Peminjaman Ruangan dan Alat', 'Layanan Kerusakan & Perbaikan']
     }
   ];
-
-  const faqData = {
-    Akademik: [
-      { q: "Bagaimana prosedur pengajuan cuti akademik?", a: "Prosedur pengajuan cuti akademik dapat dilakukan melalui portal mahasiswa dengan melampirkan surat permohonan dan bukti bebas pustaka." },
-      { q: "Kapan batas akhir pengisian KRS untuk semester ganjil?", a: "Batas akhir pengisian KRS semester ganjil adalah tanggal 31 Agustus 2024 melalui sistem informasi akademik." }
-    ],
-    IT: [
-      { q: "Bagaimana cara menghubungkan perangkat ke jaringan Wi-Fi kampus?", a: "Panduan konfigurasi username dan password SIM/Portal Akademik untuk akses Wi-Fi di area universitas." },
-      { q: "Bagaimana prosedur aktivasi akun email resmi kampus bagi mahasiswa baru?", a: "Langkah-langkah mengaktifkan email dengan domain institusi setelah resmi terdaftar sebagai civitas akademika." }
-    ],
-    SPP: [
-      { q: "Bagaimana cara melihat daftar dan mengajukan permohonan beasiswa?", a: "Informasi terkait jenis beasiswa yang tersedia (internal/eksternal), persyaratan berkas, dan linimasa pendaftaran." },
-      { q: "Bagaimana alur dan syarat pengajuan keringanan atau cicilan pembayaran UKT?", a: "Panduan resmi mengenai prosedur permohonan keringanan/cicilan pembayaran UKT bagi mahasiswa yang memenuhi kriteria." }
-    ],
-    Fasilitas: [
-      { q: "Bagaimana prosedur dan syarat peminjaman ruangan di lingkungan kampus?", a: "Langkah-langkah perizinan, pengecekan jadwal ketersediaan ruangan, dan pengisian formulir peminjaman untuk kegiatan akademik atau organisasi." },
-      { q: "Bagaimana cara mendapatkan hak akses dan izin penggunaan laboratorium?", a: "Aturan resmi terkait prosedur keselamatan, jadwal operasional, dan izin masuk laboratorium untuk keperluan praktikum atau penelitian mandiri." }
-    ]
-  };
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] font-manrope">
@@ -117,12 +119,13 @@ const DashboardPage = ({ isLoggedIn, onLogout }) => {
 
           {/* Accordion List */}
           <div className="space-y-4 mb-14">
-            {faqData[activeTab].map((item, index) => {
+            {filteredFaqs.length > 0 ? (
+              filteredFaqs.map((item, index) => {
               const isOpen = openFaq === index;
 
               return (
                 <div 
-                  key={index} 
+                  key={item.id || index} 
                   className="bg-[#EDEDED] rounded-[1rem] transition-all duration-300"
                 >
                   {/* Tombol Pertanyaan */}
@@ -131,7 +134,7 @@ const DashboardPage = ({ isLoggedIn, onLogout }) => {
                     className="w-full flex items-center justify-between p-8 text-left outline-none"
                   >
                     <span className="text-[14px]  font-['Public_Sans'] font-bold text-[gray-800] pr-10 leading-relaxed">
-                      {item.q}
+                      {item.question}
                     </span>
                     <div className="text-gray-500 shrink-0">
                       {isOpen ? <HiX size={20} /> : <HiPlus size={20} />}
@@ -141,13 +144,18 @@ const DashboardPage = ({ isLoggedIn, onLogout }) => {
                   {isOpen && (
                     <div className="px-8 pb-8 -mt-2 animate-in fade-in slide-in-from-top-1 duration-300">
                       <p className="text-[12px] font-['Public_Sans'] font-medium text-[#424654] leading-relaxed">
-                        {item.a}
+                        {item.answer}
                       </p>
                     </div>
                   )}
                 </div>
               );
-            })}
+            })
+            ) : (
+              <div className="text-center py-12 text-gray-400 font-['Public_Sans'] text-sm">
+                Belum ada FAQ untuk kategori ini.
+              </div>
+            )}
           </div>
           <div className="relative h-[180px] rounded-[2.5rem] overflow-hidden flex items-center shadow-xl">
             <img src={BgGedung} alt="Gedung IPB" className="absolute inset-0 w-full h-full object-cover" />

@@ -6,8 +6,28 @@ import { StaffTicketDetailView } from './StaffTicketDetailView';
 import { StaffLoginView } from './StaffLoginView';
 
 const StaffPortalPage = ({ tickets, updateTicket }) => {
-  const [isStaffLoggedIn, setIsStaffLoggedIn] = useState(false);
-  const [selectedTicketId, setSelectedTicketId] = useState(null);
+  const [isStaffLoggedIn, setIsStaffLoggedIn] = useState(() => {
+    return localStorage.getItem('isStaffLoggedIn') === 'true';
+  });
+  const [selectedTicketId, setSelectedTicketId] = useState(() => {
+    return localStorage.getItem('staffSelectedTicketId') || null;
+  });
+
+  React.useEffect(() => {
+    if (isStaffLoggedIn) {
+      localStorage.setItem('isStaffLoggedIn', 'true');
+    } else {
+      localStorage.removeItem('isStaffLoggedIn');
+    }
+  }, [isStaffLoggedIn]);
+
+  React.useEffect(() => {
+    if (selectedTicketId) {
+      localStorage.setItem('staffSelectedTicketId', selectedTicketId);
+    } else {
+      localStorage.removeItem('staffSelectedTicketId');
+    }
+  }, [selectedTicketId]);
 
   const activeTicket = tickets.find(t => t.id === selectedTicketId);
 

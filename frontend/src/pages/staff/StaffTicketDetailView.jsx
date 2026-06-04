@@ -16,6 +16,7 @@ export const StaffTicketDetailView = ({ ticketId, onBack }) => {
   const [staffValue, setStaffValue] = useState('');
   const [replyContent, setReplyContent] = useState('');
   const [messages, setMessages] = useState([]);
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
 
   // State khusus file
   const [uploadedFiles, setUploadedFiles] = useState([]);
@@ -26,14 +27,17 @@ export const StaffTicketDetailView = ({ ticketId, onBack }) => {
   const [isSendingReply, setIsSendingReply] = useState(false);
   const [notification, setNotification] = useState(null);
 
-  const loadTicketDetail = async () => {
+  const loadTicketDetail = async (isPolling = false) => {
     try {
       const response = await fetchWithAuth(`/api/tickets/${ticketId}`);
       if (response.ok) {
         const data = await response.json();
         setTicket(data);
-        setStatusValue(data.status);
-        setStaffValue(data.assigned_staff ? data.assigned_staff.full_name : 'Staff');
+        if (isFirstLoad) {
+          setStatusValue(data.status);
+          setStaffValue(data.assigned_staff ? data.assigned_staff.full_name : 'Staff');
+          setIsFirstLoad(false);
+        }
         
         // Konstruksi messages
         const firstMessage = {
@@ -67,14 +71,19 @@ export const StaffTicketDetailView = ({ ticketId, onBack }) => {
       }
     } catch (e) {
       console.error("Failed to load ticket", e);
-      showNotification('error', 'Gagal memuat tiket.');
+      if (!isPolling) showNotification('error', 'Gagal memuat tiket.');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    setIsFirstLoad(true);
     loadTicketDetail();
+    const interval = setInterval(() => {
+      loadTicketDetail(true);
+    }, 5000);
+    return () => clearInterval(interval);
   }, [ticketId]);
   // unused state removed
 

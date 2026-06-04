@@ -9,15 +9,13 @@ const StaffPortalPage = () => {
   const [isStaffLoggedIn, setIsStaffLoggedIn] = useState(() => {
     return localStorage.getItem('isStaffLoggedIn') === 'true';
   });
-  const [selectedTicketId, setSelectedTicketId] = useState(() => {
-    return localStorage.getItem('staffSelectedTicketId') || null;
-  });
+  const [selectedTicketId, setSelectedTicketId] = useState(null);
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const loadTickets = async () => {
+  const loadTickets = async (isPolling = false) => {
     if (!isStaffLoggedIn) return;
-    setLoading(true);
+    if (!isPolling) setLoading(true);
     try {
       const { fetchWithAuth } = await import('../../config/api');
       const response = await fetchWithAuth('/api/tickets/');
@@ -28,12 +26,16 @@ const StaffPortalPage = () => {
     } catch (error) {
       console.error("Error loading tickets:", error);
     } finally {
-      setLoading(false);
+      if (!isPolling) setLoading(false);
     }
   };
 
   React.useEffect(() => {
     loadTickets();
+    const intervalId = setInterval(() => {
+      loadTickets(true);
+    }, 5000);
+    return () => clearInterval(intervalId);
   }, [isStaffLoggedIn]);
 
   React.useEffect(() => {
@@ -45,11 +47,7 @@ const StaffPortalPage = () => {
   }, [isStaffLoggedIn]);
 
   React.useEffect(() => {
-    if (selectedTicketId) {
-      localStorage.setItem('staffSelectedTicketId', selectedTicketId);
-    } else {
-      localStorage.removeItem('staffSelectedTicketId');
-    }
+    // We no longer persist selectedTicketId to prevent direct navigation to detail on login
   }, [selectedTicketId]);
 
   const activeTicket = tickets.find(t => t.id === selectedTicketId || t.ticket_number === selectedTicketId);

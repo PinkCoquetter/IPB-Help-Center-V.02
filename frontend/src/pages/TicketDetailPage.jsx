@@ -19,7 +19,7 @@ const TicketDetailPage = ({ isLoggedIn, onLogout }) => {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
 
-  const loadTicketDetail = async () => {
+  const loadTicketDetail = async (isPolling = false) => {
     try {
       const response = await fetchWithAuth(`/api/tickets/${id}`);
       if (response.ok) {
@@ -59,12 +59,16 @@ const TicketDetailPage = ({ isLoggedIn, onLogout }) => {
     } catch (e) {
       console.error("Failed to load ticket", e);
     } finally {
-      setLoading(false);
+      if (!isPolling) setLoading(false);
     }
   };
 
   useEffect(() => {
     loadTicketDetail();
+    const interval = setInterval(() => {
+      loadTicketDetail(true);
+    }, 5000);
+    return () => clearInterval(interval);
   }, [id]);
 
   const handleFileSelect = (e) => {

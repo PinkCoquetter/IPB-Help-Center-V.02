@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import API_URL from '../../../config/api';
+import API_URL from '../../config/api';
 import { HiOutlineLockClosed, HiAtSymbol, HiOutlineExclamation, HiOutlineCheckCircle, HiOutlineEye, HiOutlineEyeOff } from 'react-icons/hi';
 import LogoIPB from '../../assets/logoipb.png';
 

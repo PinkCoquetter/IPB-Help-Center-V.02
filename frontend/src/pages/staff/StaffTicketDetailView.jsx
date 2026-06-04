@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { fetchWithAuth } from '../../../config/api';
+import { fetchWithAuth } from '../../config/api';
 import { 
   ArrowLeft, FileText, Upload, Save, ShieldCheck, 
   CheckCircle, Loader2, Paperclip, Trash2, 

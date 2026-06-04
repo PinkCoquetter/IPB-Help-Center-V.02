@@ -1,104 +1,117 @@
-import React, { useState } from 'react';
-import { fetchWithAuth } from '../config/api';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useEffect} from 'react';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { HiOutlineCloudUpload, HiOutlineShieldCheck } from 'react-icons/hi';
+import NotificationBanner from '../components/Notification';
 
-const SubmitRequestPage = ({ isLoggedIn, onLogout }) => {
+const SubmitRequestPage = ({ isLoggedIn, onLogout, addTicket }) => {
   const navigate = useNavigate();
-  const location = useLocation();
-  
-  // Ambil parameter dari URL (misal: ?title=Surat...&topic=Akademik...)
-  const queryParams = new URLSearchParams(location.search);
-  const initialTitle = queryParams.get('title') || '';
-  const initialTopic = queryParams.get('topic') || '';
 
   const [ticketData, setTicketData] = useState({
-    title: initialTitle,
-    topic: initialTopic,
+    title: '',
+    topic: '',
     nim: '',
     description: ''
   });
-  const [attachment, setAttachment] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Kategori topik sesuai FAQ
-  const topicCategories = [
-    { id: 1, name: 'Akademik' },
-    { id: 2, name: 'IT' },
-    { id: 3, name: 'SPP' },
-    { id: 4, name: 'Fasilitas' },
-  ];
+  const [notification, setNotification] = useState(null);
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null);
+
+  const confirmLeave = () => {
+    pendingAction?.();
+    setShowLeaveModal(false);
+  };
+
+  const stayHere = () => {
+    setShowLeaveModal(false);
+  };
+  
+
+  const isDirty =
+  ticketData.title ||
+  ticketData.nim ||
+  ticketData.description ||
+  ticketData.topic;
+
+  useEffect(() => {
+  const handleBeforeUnload = (e) => {
+    if (!isDirty) return;
+
+    e.preventDefault();
+    e.returnValue = '';
+  };
+
+  window.addEventListener('beforeunload', handleBeforeUnload);
+  return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+}, [isDirty]);
+
+  const handleNavigateAway = (callback) => {
+  if (!isDirty) {
+    callback();
+    return;
+  }
+
+  setPendingAction(() => callback);
+  setShowLeaveModal(true);
+};
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setTicketData({ ...ticketData, [name]: value });
   };
 
-  const handleFileChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      setAttachment(e.target.files[0]); // Simpan raw file untuk FormData
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    if (ticketData.title && ticketData.nim && ticketData.description && ticketData.topic) {
+      const now = new Date();
+    const ticketId = `TKT-${Math.floor(1000 + Math.random() * 9000)}`;
+    const dateNow = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const timeNow = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+      
+      addTicket({
+      id: ticketId,
+      status: 'OPEN',
+      title: ticketData.title,
+      desc: ticketData.description,
+      studentName: 'JOHANNA D.', // Nanti ini bisa diambil dari data user yang sedang login
+      nim: ticketData.nim,
+      date: dateNow,
+      timestamp: timeNow 
+    });
+
+    showNotification('success', 'Tiket berhasil dibuat!');
+    
+    setTimeout(() => {
+      navigate(`/tickets/${ticketId}`);
+    }, 1500);
+  
+  } else {
+      showNotification('error', 'Mohon lengkapi data');
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const showNotification = (type, message) => {
+  setNotification({ type, message });
 
-    if (ticketData.title && ticketData.description) {
-      setIsSubmitting(true);
-      try {
-        const catObj = topicCategories.find(c => c.name === ticketData.topic);
-        const categoryId = catObj ? catObj.id : 1; // Default ke 1 jika tidak ada
-        
-        const response = await fetchWithAuth('/api/tickets/', {
-          method: 'POST',
-          body: JSON.stringify({
-            title: ticketData.title,
-            description: ticketData.description,
-            category_id: categoryId,
-            priority: 'MEDIUM'
-          })
-        });
+  setTimeout(() => {
+    setNotification(null);
+  }, 3000);
+};
 
-        if (response.ok) {
-          const data = await response.json();
-          const ticketId = data.ticket_id;
-          
-          if (attachment) {
-            const formData = new FormData();
-            formData.append('file', attachment);
-            
-            await fetchWithAuth(`/api/tickets/${ticketId}/attachments`, {
-              method: 'POST',
-              body: formData
-            });
-          }
-          
-          navigate(`/tickets/${ticketId}`);
-        } else {
-          const errData = await response.json();
-          let errorMsg = 'Terjadi kesalahan';
-          if (errData.detail) {
-            errorMsg = typeof errData.detail === 'string' 
-              ? errData.detail 
-              : JSON.stringify(errData.detail);
-          }
-          alert(`Gagal membuat tiket: ${errorMsg}`);
-        }
-      } catch (error) {
-        console.error("Error submitting ticket:", error);
-        alert("Koneksi gagal. Silakan coba lagi.");
-      } finally {
-        setIsSubmitting(false);
-      }
-    } else {
-      alert("Mohon lengkapi Judul dan Deskripsi permasalahan");      
-    } 
-  };
+  
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] font-sans">
-      <Navbar isLoggedIn={isLoggedIn} onLogout={onLogout} />
+      
+      {notification && (
+      <NotificationBanner
+        type={notification.type}
+        message={notification.message}
+      />
+    )}
+      <Navbar isLoggedIn={isLoggedIn} onLogout={onLogout} onNavigate={handleNavigateAway} />
 
       <main className="max-w-5xl mx-auto px-10 pt-32 pb-20">
         <div className="animate-in fade-in duration-500">
@@ -130,9 +143,10 @@ const SubmitRequestPage = ({ isLoggedIn, onLogout }) => {
                 <label className="text-[10px] font-black text-gray-800 uppercase tracking-[0.2em] ml-1">Topik</label>
                 <select name="topic" value={ticketData.topic} onChange={handleChange} className="w-full px-8 py-5 bg-[#f8fafc] rounded-[1.5rem] border-none focus:ring-2 focus:ring-[#0040A1] outline-none text-sm font-medium cursor-pointer">
                   <option value="">Pilih topik permasalahan</option>
-                  {topicCategories.map((cat) => (
-                    <option key={cat.id} value={cat.name}>{cat.name}</option>
-                  ))}
+                  <option>Akademik</option>
+                  <option>IT Support</option>
+                  <option>UKT / Keuangan</option>
+                  <option>Fasilitas</option>
                 </select>
               </div>
             </div>
@@ -150,18 +164,11 @@ const SubmitRequestPage = ({ isLoggedIn, onLogout }) => {
             {/* Attachment */}
             <div className="space-y-4">
               <label className="text-[10px] font-black text-gray-800 uppercase tracking-[0.2em] ml-1">Dokumen Pendukung (Opsional)</label>
-              <label className="border-2 border-dashed border-gray-200 rounded-[2rem] p-16 flex flex-col items-center justify-center bg-[#f8fafc] hover:bg-gray-50 transition-colors cursor-pointer group relative">
-                <input type="file" onChange={handleFileChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept=".pdf,.docx,.png,.jpg,.jpeg" />
+              <div className="border-2 border-dashed border-gray-100 rounded-[2rem] p-16 flex flex-col items-center justify-center bg-[#f8fafc] hover:bg-gray-50 transition-colors cursor-pointer group">
                 <HiOutlineCloudUpload className="text-4xl text-gray-300 group-hover:text-[#0040A1] transition-colors mb-4" />
-                {attachment ? (
-                  <p className="text-sm font-bold text-[#0040A1] font-public">{attachment.name}</p>
-                ) : (
-                  <>
-                    <p className="text-sm font-bold text-gray-500 font-public">Klik atau seret file ke sini</p>
-                    <p className="text-[10px] text-gray-400 mt-1 uppercase tracking-widest font-public">PDF, DOCX, PNG atau JPG (max 10MB)</p>
-                  </>
-                )}
-              </label>
+                <p className="text-sm font-bold text-gray-500 font-public">Klik untuk menambahkan file</p>
+                <p className="text-[10px] text-gray-400 mt-1 uppercase tracking-widest font-public">PDF, DOCX, PNG atau JPG (max 10MB)</p>
+              </div>
             </div>
 
             {/* Footer Form */}
@@ -170,14 +177,43 @@ const SubmitRequestPage = ({ isLoggedIn, onLogout }) => {
                 <HiOutlineShieldCheck className="text-xl" />
                 <span className="text-[9px] font-black uppercase tracking-[0.2em]">End-to-end secure processing</span>
               </div>
-              <button disabled={isSubmitting} type="submit" className="w-full md:w-auto bg-gradient-to-r from-[#0040A1] to-[#0056D2] text-white px-14 py-4 rounded-2xl font-bold text-sm font-manrope uppercase tracking-widest shadow-xl shadow-blue-100 transition-all active:scale-95 disabled:opacity-50">
-                {isSubmitting ? 'Memproses...' : 'Buat Tiket'}
+              <button type="submit" className="w-full md:w-auto bg-gradient-to-r from-[#0040A1] to-[#0056D2] text-white px-14 py-4 rounded-2xl font-bold text-sm font-manrope uppercase tracking-widest shadow-xl shadow-blue-100 transition-all active:scale-95">
+                Buat Tiket
               </button>
             </div>
           </form>
         </div>
       </main>
 
+        {showLeaveModal && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[99999]">
+            <div className="bg-white rounded-3xl p-8 w-[420px] shadow-xl">
+              <h3 className="text-xl font-bold mb-2">
+                Perubahan Belum Disimpan
+              </h3>
+
+              <p className="text-gray-500 mb-6">
+                Data yang sudah Anda isi akan hilang jika meninggalkan halaman ini.
+              </p>
+
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={stayHere}
+                  className="px-5 py-3 rounded-xl border border-gray-200"
+                >
+                  Tetap di Halaman
+                </button>
+
+                <button
+                  onClick={confirmLeave}
+                  className="px-5 py-3 rounded-xl bg-red-500 text-white"
+                >
+                  Keluar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       <footer className="py-12 text-center">
         <p className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.3em] font-manrope">
           © 2026 THE ACADEMIC SANCTUARY, IPB UNIVERSITY

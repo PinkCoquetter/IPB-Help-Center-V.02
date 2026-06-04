@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { HiSearch, HiLogout, HiX, HiUser } from 'react-icons/hi';
 import Logoprofile from '../assets/logoprofile.png';
 
-const Navbar = ({ isLoggedIn, onLogout }) => {
+const Navbar = ({ isLoggedIn, onLogout, onNavigate }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [showDropdown, setShowDropdown] = useState(false);
@@ -13,23 +13,46 @@ const Navbar = ({ isLoggedIn, onLogout }) => {
     { name: 'Beranda', path: '/dashboard' },
     { name: 'Buat Tiket Baru', path: '/tickets/new' },
     { name: 'Tiket Saya', path: '/tickets' },
-  ];
+  ]; 
 
   return (
     <nav className="fixed top-0 left-0 w-full z-50 bg-white border-b border-gray-100 shadow-sm font-manrope">
       <div className="h-[px] w-full bg-gradient-to-r from-[#0040A1] to-[#0056D2]"></div>
       <div className="max-w-[1440px] mx-auto flex items-center px-10 py-3 relative">
         <div className="w-[200px] shrink-0">
-          <Link to="/dashboard" className="text-[#0040A1] font-bold text-2xl tracking-tighter">IPB OneHelp</Link>
+          <button
+            onClick={() => {
+              if (onNavigate) {
+                onNavigate(() => navigate('/dashboard'));
+              } else {
+                navigate('/dashboard');
+              }
+            }}
+            className="text-[#0040A1] font-bold text-2xl tracking-tighter"
+          >IPB OneHelp</button>
         </div>
 
         {!isSearchOpen ? (
           <div className="flex-grow flex justify-center space-x-10">
             {navLinks.map((link) => (
-              <Link key={link.path} to={link.path} className={`relative py-2 text-[13px] transition-all ${location.pathname === link.path ? 'text-[#0040A1] font-[800]' : 'text-gray-400 font-medium'}`}>
+              <button
+                key={link.path}
+                onClick={() => {
+                  if (onNavigate) {
+                    onNavigate(() => navigate(link.path));
+                  } else {
+                    navigate(link.path);
+                  }
+                }}
+                className={`relative py-2 text-[13px] transition-all ${
+                  location.pathname === link.path
+                    ? 'text-[#0040A1] font-[800]'
+                    : 'text-gray-400 font-medium'
+                }`}
+              >
                 {link.name}
                 {location.pathname === link.path && <span className="absolute bottom-[-14px] left-0 w-full h-[2.5px] bg-[#0040A1] rounded-full"></span>}
-              </Link>
+              </button>
             ))}
           </div>
         ) : (
@@ -62,7 +85,21 @@ const Navbar = ({ isLoggedIn, onLogout }) => {
             </button>
               {showDropdown && (
                 <div className="absolute right-0 mt-3 w-48 bg-white rounded-2xl shadow-2xl border py-2 z-50 overflow-hidden">
-                  <button onClick={() => { onLogout(); navigate('/dashboard'); }} className="w-full flex items-center gap-3 px-5 py-3 text-sm text-red-500 font-bold hover:bg-red-50"><HiLogout size={18} /> Logout</button>
+                  <button
+                    onClick={() => {
+                      const logoutAction = () => {
+                        onLogout();
+                        navigate('/dashboard');
+                      };
+
+                      if (onNavigate) {
+                        onNavigate(logoutAction);
+                      } else {
+                        logoutAction();
+                      }
+                    }}
+                  className="w-full flex items-center gap-3 px-5 py-3 text-sm text-red-500 font-bold hover:bg-red-50"> 
+                  <HiLogout size={18} /> Logout</button>
                 </div>
               )}
             </div>

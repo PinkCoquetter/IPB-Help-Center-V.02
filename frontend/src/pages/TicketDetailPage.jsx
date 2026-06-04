@@ -1,126 +1,53 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { fetchWithAuth } from '../config/api';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { HiOutlineCloudUpload, HiChatAlt2, HiOutlineArrowNarrowLeft } from 'react-icons/hi';
-import { FileText, Paperclip, Trash2 } from 'lucide-react';
 
-const TicketDetailPage = ({ isLoggedIn, onLogout }) => {
+const TicketDetailPage = ({ isLoggedIn, onLogout, tickets }) => {
   const { id } = useParams();
   const navigate = useNavigate();
   
-  const [ticket, setTicket] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [replyText, setReplyText] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  const [uploadedFiles, setUploadedFiles] = useState([]);
-  const [isDragging, setIsDragging] = useState(false);
-  const fileInputRef = useRef(null);
+  // Mencari data tiket dari state global berdasarkan ID di URL
+  const ticket = tickets.find(t => t.id === id);
 
-  const loadTicketDetail = async (isPolling = false) => {
-    try {
-      const response = await fetchWithAuth(`/api/tickets/${id}`);
-      if (response.ok) {
-        const data = await response.json();
-        setTicket(data);
-        
-        // Konstruksi messages
-        const firstMessage = {
-          id: `desc-${data.id}`,
-          sender: data.student ? data.student.full_name : 'STUDENT',
-          role: 'student',
-          text: data.description,
-          time: new Date(data.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
-          date: new Date(data.created_at).toLocaleDateString('en-GB'),
-          attachments: data.attachments ? data.attachments.map(a => {
-            const fileName = a.file_path ? a.file_path.split(/[\\/]/).pop() : a.file_name;
-            return {
-              name: a.file_name,
-              size: (a.file_size / 1024).toFixed(0) + ' KB',
-              url: `http://localhost:8000/uploads/${fileName}` // Adjust later to real API URL if needed
-            };
-          }) : []
-        };
-        
-        const replyMessages = (data.replies || []).map(r => ({
-          id: `reply-${r.id}`,
-          sender: r.sender ? r.sender.full_name : 'Unknown',
-          role: r.sender && (r.sender.role === 'staff' || r.sender.role === 'admin') ? 'staff' : 'student',
-          text: r.message,
-          time: new Date(r.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
-          date: new Date(r.created_at).toLocaleDateString('en-GB'),
-          attachments: []
-        }));
-        
-        setMessages([firstMessage, ...replyMessages]);
-      }
-    } catch (e) {
-      console.error("Failed to load ticket", e);
-    } finally {
-      if (!isPolling) setLoading(false);
-    }
-  };
+  const [messages, setMessages] = useState([]);
+  const [replyText, setReplyText] = useState('');
 
   useEffect(() => {
-    loadTicketDetail();
-    const interval = setInterval(() => {
-      loadTicketDetail(true);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [id]);
-
-  const handleFileSelect = (e) => {
-    if (e.target.files) addFiles(e.target.files);
-  };
-
-  const addFiles = (files) => {
-    // Kita hanya simpan raw File untuk dikirim via FormData nanti
-    const newFiles = Array.from(files);
-    setUploadedFiles(prev => [...prev, ...newFiles]);
-  };
-
-  const removeFile = (index) => {
-    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const handleSendReply = async (e) => {
-    e.preventDefault();
-    if (!replyText.trim() && uploadedFiles.length === 0) return;
-    setIsSubmitting(true);
-    
-    try {
-      if (replyText.trim()) {
-        await fetchWithAuth(`/api/tickets/${ticket.id}/reply`, {
-          method: 'POST',
-          body: JSON.stringify({ message: replyText })
-        });
-      }
-      
-      if (uploadedFiles.length > 0) {
-        for (const file of uploadedFiles) {
-          const formData = new FormData();
-          formData.append('file', file);
-          await fetchWithAuth(`/api/tickets/${ticket.id}/attachments`, {
-            method: 'POST',
-            body: formData
-          });
+    if (ticket) {
+      setMessages([
+        {
+          id: 1,
+          sender: "STUDENT USER",
+          role: 'student',
+          text: ticket.desc,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          date: ticket.date
         }
-      }
-      
-      setReplyText('');  
-      setUploadedFiles([]);
-      await loadTicketDetail();
-    } catch (e) {
-      console.error("Failed to send reply", e);
-      alert("Gagal mengirim balasan.");
-    } finally {
-      setIsSubmitting(false);
+      ]);
     }
+  }, [ticket]);
+
+  const handleSendReply = (e) => {
+    e.preventDefault();
+    if (!replyText.trim()) return;
+const now = new Date();
+  const timeNow = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+
+    const newMessage = {
+      id: Date.now(),
+      sender: "STUDENT USER",
+      role: 'student',
+      text: replyText,
+      time: timeNow,
+      date: "Today"
+    };
+
+    setMessages([...messages, newMessage]);
+    setReplyText(''); 
+    showNotification('success','Balasan berhasil dikirim.');
   };
 
-  if (loading) return <div className="p-20 text-center font-manrope text-2xl font-bold">Memuat Tiket...</div>;
   if (!ticket) return <div className="p-20 text-center font-manrope text-2xl font-bold">Ticket Not Found</div>;
 
   return (
@@ -139,12 +66,12 @@ const TicketDetailPage = ({ isLoggedIn, onLogout }) => {
         <div className="mb-12">
           <h1 className="text-5xl font-[800] text-gray-900 mb-4 tracking-tighter font-manrope">{ticket.title}</h1>
           <div className="flex items-center gap-4">
-            <span className="text-[10px] font-black px-3 py-1 bg-[#0040A1] text-white rounded uppercase tracking-widest">{ticket.status.replace('_', ' ')}</span>
-            <span className="text-[10px] font-bold text-gray-300 tracking-[0.3em]">#{ticket.ticket_number || ticket.id}</span>
+            <span className="text-[10px] font-black px-3 py-1 bg-[#0040A1] text-white rounded uppercase tracking-widest">{ticket.status}</span>
+            <span className="text-[10px] font-bold text-gray-300 tracking-[0.3em]">#{ticket.id}</span>
             <div className="flex-grow"></div>
             <div className="text-right">
                 <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Submitted on</p>
-                <p className="text-sm font-bold text-gray-900">{new Date(ticket.created_at).toLocaleDateString('en-GB')}</p>
+                <p className="text-sm font-bold text-gray-900">{ticket.date}</p>
             </div>
           </div>
         </div>
@@ -160,10 +87,10 @@ const TicketDetailPage = ({ isLoggedIn, onLogout }) => {
                   </div>
                   <div>
                     <p className="text-[11px] font-black text-gray-900 uppercase tracking-tight font-manrope">
-                      {msg.sender} 
+                      {msg.role === 'staff' ? msg.sender : "JOHANNA D."} 
                     </p>
                     <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest font-public">
-                      {msg.role === 'staff' ? 'Support Team' : (ticket.student?.nim ? `STUDENT ID: ${ticket.student.nim}` : 'STUDENT')} 
+                      {msg.role === 'staff' ? 'Support Team' : `STUDENT ID: ${ticket.nim}`} 
                     </p>
                   </div>
                 </div>
@@ -172,22 +99,6 @@ const TicketDetailPage = ({ isLoggedIn, onLogout }) => {
               <p className={`text-sm font-medium leading-relaxed px-2 ${msg.role === 'staff' ? 'text-gray-800' : 'text-gray-500 italic'}`}>
                 "{msg.text}"
               </p>
-              {/* Tampilan Lampiran di dalam Bubble */}
-              {msg.attachments && msg.attachments.length > 0 && (
-                <div className="grid grid-cols-2 gap-4 mt-6 border-t border-gray-50 pt-6">
-                  {msg.attachments.map((file, idx) => (
-                    <a key={idx} href={file.url} download={file.name} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm hover:border-[#0040A1] hover:shadow-md transition-all cursor-pointer group">
-                      <div className="w-10 h-10 bg-blue-50 text-[#0040A1] rounded-xl flex items-center justify-center group-hover:bg-[#0040A1] group-hover:text-white transition-colors">
-                        <FileText size={20} />
-                      </div>
-                      <div className="overflow-hidden">
-                        <p className="text-xs font-bold text-gray-800 truncate group-hover:text-[#0040A1] transition-colors">{file.name}</p>
-                        <p className="text-[10px] text-gray-400 font-bold uppercase">{file.size}</p>
-                      </div>
-                    </a>
-                  ))}
-                </div>
-              )}
             </div>
           ))}
         </div>
@@ -209,39 +120,15 @@ const TicketDetailPage = ({ isLoggedIn, onLogout }) => {
             {/* ATTACHMENT DI BALASAN */}
             <div className="space-y-4">
               <label className="text-[10px] font-black text-gray-800 uppercase tracking-[0.2em] ml-1 italic">Attachments (Optional)</label>
-              <div 
-                onClick={() => fileInputRef.current?.click()}
-                onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-                onDragLeave={() => setIsDragging(false)}
-                onDrop={(e) => { e.preventDefault(); setIsDragging(false); addFiles(e.dataTransfer.files); }}
-                className={`border-2 border-dashed rounded-[2rem] p-10 flex flex-col items-center justify-center transition-colors cursor-pointer group ${
-                  isDragging ? 'border-[#0040A1] bg-blue-50' : 'border-gray-100 bg-[#f8fafc] hover:bg-gray-50'
-                }`}
-              >
-                <input type="file" multiple ref={fileInputRef} onChange={handleFileSelect} className="hidden" />
-                <HiOutlineCloudUpload className={`text-3xl mb-2 ${isDragging ? 'text-[#0040A1]' : 'text-gray-300 group-hover:text-[#0040A1]'}`} />
+              <div className="border-2 border-dashed border-gray-100 rounded-[2rem] p-10 flex flex-col items-center justify-center bg-[#f8fafc] hover:bg-gray-50 transition-colors cursor-pointer group">
+                <HiOutlineCloudUpload className="text-3xl text-gray-300 group-hover:text-[#0040A1] mb-2" />
                 <p className="text-xs font-bold text-gray-500 font-public tracking-tight">Tambah file pendukung balasan</p>
               </div>
-
-              {/* List File yang terpilih sebelum dikirim */}
-              {uploadedFiles.length > 0 && (
-                <div className="flex flex-wrap gap-3 mt-4">
-                  {uploadedFiles.map((file, index) => (
-                    <div key={index} className="flex items-center gap-3 bg-white border border-blue-100 p-3 pl-4 rounded-full shadow-sm">
-                      <Paperclip size={14} className="text-[#0040A1]" />
-                      <span className="text-xs font-bold text-gray-700">{file.name}</span>
-                      <button type="button" onClick={() => removeFile(index)} className="text-red-400 hover:text-red-600 p-1">
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
 
             <div className="flex items-center justify-between pt-8 border-t border-gray-50">
-              <button disabled={isSubmitting} type="submit" className="bg-[#0040A1] text-white px-14 py-4 rounded-2xl font-bold text-sm uppercase tracking-widest shadow-lg hover:bg-blue-800 transition-all ml-auto font-manrope disabled:opacity-50">
-                {isSubmitting ? 'Mengirim...' : 'Kirim'}
+              <button type="submit" className="bg-[#0040A1] text-white px-14 py-4 rounded-2xl font-bold text-sm uppercase tracking-widest shadow-lg hover:bg-blue-800 transition-all ml-auto font-manrope">
+                Kirim
               </button>
             </div>
           </form>

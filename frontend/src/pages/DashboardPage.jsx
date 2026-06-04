@@ -4,25 +4,34 @@ import Navbar from '../components/Navbar';
 import { HiPlus, HiX, HiOutlineArrowNarrowRight } from 'react-icons/hi';
 import { RiGraduationCapLine, RiUserSearchLine, RiBankLine, RiTrophyLine } from 'react-icons/ri';
 import BgGedung from '../assets/image 3.png';
+import API_URL from '../config/api';
 
 const DashboardPage = ({ isLoggedIn, onLogout }) => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('Akademik');
     const [openFaq, setOpenFaq] = useState(null);
   const [allFaqs, setAllFaqs] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Fetch FAQs dari API backend
   useEffect(() => {
     const fetchFaqs = async () => {
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'https://ipb-help-center-v02-production.up.railway.app';
-        const response = await fetch(`${apiUrl}/api/faqs/public`);
+        setIsLoading(true);
+        console.log("Fetching FAQs from:", `${API_URL}/api/faqs/public`);
+        const response = await fetch(`${API_URL}/api/faqs/public`);
+        console.log("FAQ response status:", response.status);
         if (response.ok) {
           const data = await response.json();
+          console.log("FAQs received:", data);
           setAllFaqs(data);
+        } else {
+          console.error("FAQ fetch failed with status:", response.status);
         }
       } catch (error) {
         console.error("Error fetching FAQs:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchFaqs();

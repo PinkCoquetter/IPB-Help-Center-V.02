@@ -49,7 +49,14 @@ function App() {
 
   // Simpan ke localStorage setiap kali ada perubahan pada tickets
   React.useEffect(() => {
-    localStorage.setItem('global_tickets', JSON.stringify(tickets));
+    try {
+      localStorage.setItem('global_tickets', JSON.stringify(tickets));
+    } catch (e) {
+      console.error("Failed to save tickets to localStorage:", e);
+      if (e.name === 'QuotaExceededError' || e.code === 22) {
+        alert("Gagal menyimpan: Ukuran file lampiran terlalu besar! Batas memori browser penuh. Mohon hapus tiket ini dan buat ulang dengan ukuran file yang lebih kecil.");
+      }
+    }
   }, [tickets]);
 
   // Sinkronisasi perubahan antar tab (real-time chat di browser yg sama)
@@ -84,7 +91,7 @@ function App() {
         }
       ]
     };
-    setTickets([ticketWithMessages, ...tickets]);
+    setTickets(prevTickets => [ticketWithMessages, ...prevTickets]);
   };
   const updateTicket = (id, updatedData) => {
       setTickets(prev => prev.map(t => t.id === id ? { ...t, ...updatedData } : t));

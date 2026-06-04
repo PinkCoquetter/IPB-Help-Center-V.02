@@ -26,7 +26,7 @@ export const StaffLoginView = ({ onLoginSuccess }) => {
             
             if (response.ok) {
                 // Pastikan role staff atau admin
-                if (data.user.role !== 'staff' && data.user.role !== 'admin') {
+                if (data.user.role.toLowerCase() !== 'staff' && data.user.role.toLowerCase() !== 'admin') {
                     setMessage({ type: 'error', text: 'Access denied. Staff only.' });
                     return;
                 }

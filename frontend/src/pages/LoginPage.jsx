@@ -38,7 +38,7 @@ const LoginPage = ({ onLogin }) => {
             
             if (response.ok) {
                 // Pastikan role student
-                if (data.user.role !== 'student') {
+                if (data.user.role.toLowerCase() !== 'student') {
                     setMessage({ type: 'error', text: 'This portal is for students only.' });
                     return;
                 }

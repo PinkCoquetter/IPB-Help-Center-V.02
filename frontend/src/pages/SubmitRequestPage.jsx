@@ -56,7 +56,7 @@ const SubmitRequestPage = ({ isLoggedIn, onLogout }) => {
             title: ticketData.title,
             description: ticketData.description,
             category_id: categoryId,
-            priority: 'medium'
+            priority: 'MEDIUM'
           })
         });
 
@@ -77,7 +77,13 @@ const SubmitRequestPage = ({ isLoggedIn, onLogout }) => {
           navigate(`/tickets/${ticketId}`);
         } else {
           const errData = await response.json();
-          alert(`Gagal membuat tiket: ${errData.detail || 'Terjadi kesalahan'}`);
+          let errorMsg = 'Terjadi kesalahan';
+          if (errData.detail) {
+            errorMsg = typeof errData.detail === 'string' 
+              ? errData.detail 
+              : JSON.stringify(errData.detail);
+          }
+          alert(`Gagal membuat tiket: ${errorMsg}`);
         }
       } catch (error) {
         console.error("Error submitting ticket:", error);

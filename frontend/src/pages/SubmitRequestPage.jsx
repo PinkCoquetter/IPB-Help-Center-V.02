@@ -1,11 +1,14 @@
-import React, { useState} from 'react';
+import React, { useState, useEffect} from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { HiOutlineCloudUpload, HiOutlineShieldCheck } from 'react-icons/hi';
-import NotificationBanner from '../components/NotificationBanner';
+import NotificationBanner from '../components/Notification';
 
 const SubmitRequestPage = ({ isLoggedIn, onLogout, addTicket }) => {
   const navigate = useNavigate();
+
+  showNotification('success', 'Tiket berhasil dibuat!');
+  
   const [ticketData, setTicketData] = useState({
     title: '',
     topic: '',
@@ -14,7 +17,46 @@ const SubmitRequestPage = ({ isLoggedIn, onLogout, addTicket }) => {
   });
 
   const [notification, setNotification] = useState(null);
-  
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null);
+
+  const confirmLeave = () => {
+    pendingAction?.();
+    setShowLeaveModal(false);
+  };
+
+  const stayHere = () => {
+    setShowLeaveModal(false);
+  };
+
+  const isDirty =
+  ticketData.title ||
+  ticketData.nim ||
+  ticketData.description ||
+  ticketData.topic;
+
+  useEffect(() => {
+  const handleBeforeUnload = (e) => {
+    if (!isDirty) return;
+
+    e.preventDefault();
+    e.returnValue = '';
+  };
+
+  window.addEventListener('beforeunload', handleBeforeUnload);
+  return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+}, [isDirty]);
+
+  const handleNavigateAway = (callback) => {
+  if (!isDirty) {
+    callback();
+    return;
+  }
+
+  setPendingAction(() => callback);
+  setShowLeaveModal(true);
+};
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setTicketData({ ...ticketData, [name]: value });
@@ -39,8 +81,6 @@ const SubmitRequestPage = ({ isLoggedIn, onLogout, addTicket }) => {
       date: dateNow,
       timestamp: timeNow 
     });
-
-    showNotification('success', 'Tiket berhasil dibuat!');
     
     setTimeout(() => {
       navigate(`/tickets/${ticketId}`);
@@ -68,7 +108,7 @@ const SubmitRequestPage = ({ isLoggedIn, onLogout, addTicket }) => {
         message={notification.message}
       />
     )}
-      <Navbar isLoggedIn={isLoggedIn} onLogout={onLogout} />
+      <Navbar isLoggedIn={isLoggedIn} onLogout={onLogout} onNavigate={handleNavigateAway} />
 
       <main className="max-w-5xl mx-auto px-10 pt-32 pb-20">
         <div className="animate-in fade-in duration-500">
@@ -142,6 +182,35 @@ const SubmitRequestPage = ({ isLoggedIn, onLogout, addTicket }) => {
         </div>
       </main>
 
+        {showLeaveModal && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[99999]">
+            <div className="bg-white rounded-3xl p-8 w-[420px] shadow-xl">
+              <h3 className="text-xl font-bold mb-2">
+                Perubahan Belum Disimpan
+              </h3>
+
+              <p className="text-gray-500 mb-6">
+                Data yang sudah Anda isi akan hilang jika meninggalkan halaman ini.
+              </p>
+
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={stayHere}
+                  className="px-5 py-3 rounded-xl border border-gray-200"
+                >
+                  Tetap di Halaman
+                </button>
+
+                <button
+                  onClick={confirmLeave}
+                  className="px-5 py-3 rounded-xl bg-red-500 text-white"
+                >
+                  Keluar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       <footer className="py-12 text-center">
         <p className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.3em] font-manrope">
           © 2026 THE ACADEMIC SANCTUARY, IPB UNIVERSITY

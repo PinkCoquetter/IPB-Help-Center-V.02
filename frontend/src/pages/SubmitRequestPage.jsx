@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { HiOutlineCloudUpload, HiOutlineShieldCheck } from 'react-icons/hi';
-import { toast } from 'react-toastify';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const SubmitRequestPage = ({ isLoggedIn, onLogout, addTicket }) => {
   const navigate = useNavigate();
@@ -114,7 +115,7 @@ const SubmitRequestPage = ({ isLoggedIn, onLogout, addTicket }) => {
               <div className="space-y-4">
                 <label className="text-[10px] font-black text-gray-800 uppercase tracking-[0.2em] ml-1">Topik</label>
                 <select name="topic" value={ticketData.topic} onChange={handleChange} className="w-full px-8 py-5 bg-[#f8fafc] rounded-[1.5rem] border-none focus:ring-2 focus:ring-[#0040A1] outline-none text-sm font-medium cursor-pointer">
-                  <option value>Pilh topik permasalahan</option>
+                  <option value="">Pilih topik permasalahan</option>
                   <option>Akademik</option>
                   <option>IT Support</option>
                   <option>UKT / Keuangan</option>

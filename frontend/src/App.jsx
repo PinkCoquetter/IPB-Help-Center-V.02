@@ -13,8 +13,8 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(() => {
     return localStorage.getItem('isLoggedIn') === 'true';
   });
-  // Data Tiket Global (Akan reset jika refresh)
-  const [tickets, setTickets] = useState([
+  // Data Tiket Global (Sinkronisasi antar tab menggunakan localStorage)
+  const defaultTickets = [
     { 
       id: 'TKT-9420', status: 'OPEN', title: 'Pembayaran UKT Gagal', desc: 'Pembayaran UKT tidak bisa dilakukan, saya tidak tahu alasannya apa', date: 'Oct 12, 2024',
       messages: [
@@ -33,7 +33,35 @@ function App() {
         { id: 1, sender: 'STUDENT USER', role: 'student', text: 'Saat mau masuk kawasan kampus, KTM tidak dapat discan.', time: '14:20', date: 'Oct 05, 2024' }
       ]
     }
-  ]);
+  ];
+
+  const [tickets, setTickets] = useState(() => {
+    const savedTickets = localStorage.getItem('global_tickets');
+    if (savedTickets) {
+      try {
+        return JSON.parse(savedTickets);
+      } catch (e) {
+        console.error("Failed to parse tickets from localStorage", e);
+      }
+    }
+    return defaultTickets;
+  });
+
+  // Simpan ke localStorage setiap kali ada perubahan pada tickets
+  React.useEffect(() => {
+    localStorage.setItem('global_tickets', JSON.stringify(tickets));
+  }, [tickets]);
+
+  // Sinkronisasi perubahan antar tab (real-time chat di browser yg sama)
+  React.useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'global_tickets' && e.newValue) {
+        setTickets(JSON.parse(e.newValue));
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   const addTicket = (newTicket) => {
     // Beri pesan pertama (deskripsi) ke tiket baru

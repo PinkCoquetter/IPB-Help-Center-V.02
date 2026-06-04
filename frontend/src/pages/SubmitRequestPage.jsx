@@ -38,19 +38,51 @@ const SubmitRequestPage = ({ isLoggedIn, onLogout, addTicket }) => {
       timestamp: timeNow 
     });
 
-    toast.success('Tiket berhasil dibuat!');
+    showNotification('success', 'Tiket berhasil dibuat!');
     
     setTimeout(() => {
       navigate(`/tickets/${ticketId}`);
     }, 1500);
   
   } else {
-      toast.error('Mohon lengkapi Title, NIM, dan Deskripsi');
+      showNotification('error', 'Mohon lengkapi data');
     }
   };
 
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (type, message) => {
+    setNotification({
+      id: Date.now(),
+      type,
+      message
+    });
+  };
+
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 4000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
   return (
     <div className="min-h-screen bg-[#F8FAFC] font-sans">
+      <AnimatePresence>
+      {notification && (
+        <motion.div
+          initial={{ opacity: 0, y: -100 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -100 }}
+          className="fixed top-8 left-1/2 -translate-x-1/2 z-[9999]"
+        >
+          Notification
+        </motion.div>
+      )}
+      </AnimatePresence>
       <Navbar isLoggedIn={isLoggedIn} onLogout={onLogout} />
 
       <main className="max-w-5xl mx-auto px-10 pt-32 pb-20">

@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState} from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { HiOutlineCloudUpload, HiOutlineShieldCheck } from 'react-icons/hi';
-import { motion, AnimatePresence } from 'framer-motion';
+import NotificationBanner from '../components/NotificationBanner';
 
 const SubmitRequestPage = ({ isLoggedIn, onLogout, addTicket }) => {
   const navigate = useNavigate();
@@ -13,6 +13,8 @@ const SubmitRequestPage = ({ isLoggedIn, onLogout, addTicket }) => {
     description: ''
   });
 
+  const [notification, setNotification] = useState(null);
+  
   const handleChange = (e) => {
     const { name, value } = e.target;
     setTicketData({ ...ticketData, [name]: value });
@@ -49,40 +51,23 @@ const SubmitRequestPage = ({ isLoggedIn, onLogout, addTicket }) => {
     }
   };
 
-  const [notification, setNotification] = useState(null);
-
   const showNotification = (type, message) => {
-    setNotification({
-      id: Date.now(),
-      type,
-      message
-    });
-  };
+  setNotification({ type, message });
 
-  useEffect(() => {
-    if (notification) {
-      const timer = setTimeout(() => {
-        setNotification(null);
-      }, 4000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [notification]);
+  setTimeout(() => {
+    setNotification(null);
+  }, 3000);
+};
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] font-sans">
-      <AnimatePresence>
+      
       {notification && (
-        <motion.div
-          initial={{ opacity: 0, y: -100 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -100 }}
-          className="fixed top-8 left-1/2 -translate-x-1/2 z-[9999]"
-        >
-          Notification
-        </motion.div>
-      )}
-      </AnimatePresence>
+      <NotificationBanner
+        type={notification.type}
+        message={notification.message}
+      />
+    )}
       <Navbar isLoggedIn={isLoggedIn} onLogout={onLogout} />
 
       <main className="max-w-5xl mx-auto px-10 pt-32 pb-20">

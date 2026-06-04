@@ -25,6 +25,8 @@ from app.routers import auth, tickets, categories, services, faqs, notifications
 from sqlalchemy import select, func as sa_func
 from app.core.database import AsyncSessionLocal
 from app.models.faq import FAQ, FAQVisibilityEnum
+from app.models.user import User, RoleEnum
+from app.core.security import hash_password
 
 FAQS_SEED_DATA = [
     {
@@ -112,10 +114,46 @@ async def _seed_faqs():
     except Exception as e:
         logging.error(f"FAQ seeding failed: {e}")
 
+async def _seed_users():
+    try:
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(select(sa_func.count()).select_from(User))
+            count = result.scalar()
+            if count and count > 0:
+                logging.info(f"User table already has {count} rows, skipping seed.")
+                return
+            logging.info("Seeding User data...")
+            
+            admin = User(
+                full_name="Admin IPB",
+                email="admin@apps.ipb.ac.id",
+                hashed_password=hash_password("admin123"),
+                role=RoleEnum.ADMIN
+            )
+            staff = User(
+                full_name="Staff Akademik",
+                email="staff.akademik@apps.ipb.ac.id",
+                hashed_password=hash_password("staff123"),
+                role=RoleEnum.STAFF
+            )
+            student = User(
+                full_name="Mahasiswa IPB",
+                email="student@apps.ipb.ac.id",
+                hashed_password=hash_password("12345678"),
+                role=RoleEnum.STUDENT,
+                nim="G64100000"
+            )
+            session.add_all([admin, staff, student])
+            await session.commit()
+            logging.info("✅ Successfully seeded default Users.")
+    except Exception as e:
+        logging.error(f"User seeding failed: {e}")
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
     FastAPICache.init(InMemoryBackend(), prefix="helpcenter-cache")
+    await _seed_users()
     await _seed_faqs()
     yield
     print("👋 Server stopped.")

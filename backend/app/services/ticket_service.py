@@ -50,7 +50,8 @@ async def create_ticket(payload: TicketCreate, student: User, db: AsyncSession) 
         f"Ticket #{ticket.ticket_number} has been created successfully."
     )
 
-    await db.flush()
+    await db.commit()
+    await db.refresh(ticket)
     return ticket
 
 async def get_tickets(
@@ -167,4 +168,6 @@ async def update_ticket_status(ticket_id: int, payload: TicketStatusUpdate, user
         f"Your ticket #{ticket.ticket_number} status is now {payload.status.value}."
     )
 
+    await db.commit()
+    await db.refresh(ticket)
     return ticket

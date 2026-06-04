@@ -81,7 +81,7 @@ async def upload_attachment(ticket_id: int, file: UploadFile = File(...), db: As
         
     attachment = TicketAttachment(file_name=file.filename, file_path=file_path, file_size=len(content), ticket_id=ticket.id)
     db.add(attachment)
-    await db.flush()
+    await db.commit()
     return {"message": "File uploaded successfully", "file_name": file.filename}
 
 @router.post("/{ticket_id}/assign")
@@ -98,4 +98,5 @@ async def assign_ticket(ticket_id: int, payload: TicketAssign, db: AsyncSession 
         raise HTTPException(status_code=404, detail="Staff not found")
 
     ticket.assigned_staff_id = staff.id
+    await db.commit()
     return {"message": f"Ticket assigned to {staff.full_name}"}

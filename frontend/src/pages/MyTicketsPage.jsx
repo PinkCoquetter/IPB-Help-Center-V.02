@@ -1,4 +1,5 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
+import { fetchWithAuth } from '../config/api';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { 
@@ -36,13 +37,35 @@ const getStatusStyles = (status) => {
   }
 };
 
-const MyTicketsPage = ({ isLoggedIn, onLogout, tickets = [] }) => {
+const MyTicketsPage = ({ isLoggedIn, onLogout }) => {
   const navigate = useNavigate();
   const listRef = useRef(null);
+  const [tickets, setTickets] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('ALL');
-  const openCount = tickets.filter(t => t.status === 'OPEN').length;
-  const progressCount = tickets.filter(t => t.status === 'IN PROGRESS').length;
-  const resolvedCount = tickets.filter(t => t.status === 'RESOLVED').length;
+
+  useEffect(() => {
+    const loadTickets = async () => {
+      try {
+        const response = await fetchWithAuth('/api/tickets/me');
+        if (response.ok) {
+          const data = await response.json();
+          setTickets(data);
+        } else {
+          console.error("Failed to fetch tickets");
+        }
+      } catch (e) {
+        console.error("Error fetching tickets:", e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadTickets();
+  }, []);
+
+  const openCount = tickets.filter(t => t.status === 'open' || t.status === 'OPEN').length;
+  const progressCount = tickets.filter(t => t.status === 'in_progress' || t.status === 'IN PROGRESS').length;
+  const resolvedCount = tickets.filter(t => t.status === 'resolved' || t.status === 'RESOLVED').length;
 
   const stats = [
     { id: 'OPEN', label: 'Tiket Baru', val: openCount.toString().padStart(2, '0'), sub: 'MENUNGGU TANGGAPAN', icon: <HiOutlineMail />, color: 'text-blue-600' },
@@ -52,6 +75,9 @@ const MyTicketsPage = ({ isLoggedIn, onLogout, tickets = [] }) => {
 
   const filteredTickets = tickets.filter(t => {
     if (filterStatus === 'ALL') return true;
+    if (filterStatus === 'OPEN') return t.status === 'open' || t.status === 'OPEN';
+    if (filterStatus === 'IN PROGRESS') return t.status === 'in_progress' || t.status === 'IN PROGRESS';
+    if (filterStatus === 'RESOLVED') return t.status === 'resolved' || t.status === 'RESOLVED';
     return t.status === filterStatus;
   });
 
@@ -134,23 +160,23 @@ const MyTicketsPage = ({ isLoggedIn, onLogout, tickets = [] }) => {
                         {style.label}
                       </span>
                       <span className="text-[10px] font-bold text-gray-300 tracking-[0.3em]">
-                        #{ticket.id}
+                        #{ticket.ticket_number || ticket.id}
                       </span>
                     </div>
                     <h3 className={`text-xl font-bold font-manrope transition-colors ${style.text}`}>
                       {ticket.title}
                     </h3>
                     <p className="text-[13px] leading-relaxed max-w-2xl font-medium text-gray-400">
-                      {ticket.desc}
+                      {ticket.description || ticket.desc}
                     </p>
                   </div>
 
                   <div className="mt-8 md:mt-0 text-right flex flex-col items-end gap-5 w-full md:w-auto">
                     <div>
                       <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 font-public">
-                        {ticket.status === 'RESOLVED' ? 'Selesai pada' : 'Diajukan pada'}
+                        {ticket.status === 'resolved' || ticket.status === 'RESOLVED' ? 'Selesai pada' : 'Diajukan pada'}
                       </p>
-                      <p className="text-sm font-bold text-gray-900">{ticket.date}</p>
+                      <p className="text-sm font-bold text-gray-900">{new Date(ticket.created_at || ticket.date).toLocaleDateString('en-GB')}</p>
                     </div>
                     
                     <button 

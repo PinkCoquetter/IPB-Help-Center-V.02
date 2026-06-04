@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import API_URL from '../../../config/api';
 import { HiOutlineLockClosed, HiAtSymbol, HiOutlineExclamation, HiOutlineCheckCircle, HiOutlineEye, HiOutlineEyeOff } from 'react-icons/hi';
 import LogoIPB from '../../assets/logoipb.png';
 
@@ -7,19 +8,44 @@ export const StaffLoginView = ({ onLoginSuccess }) => {
     const [message, setMessage] = useState({ type: '', text: '' });
     const [showPassword, setShowPassword] = useState(false);
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setMessage({ type: '', text: '' });
 
-        // Kredensial khusus Staff
-        if (formData.username === 'staff@apps.ipb.ac.id' && formData.password === '123') {
-            setMessage({ type: 'success', text: 'Staff Authentication Success!' });
+        try {
+            const response = await fetch(`${API_URL}/api/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: formData.username,
+                    password: formData.password
+                })
+            });
             
-            setTimeout(() => {
-                onLoginSuccess(); //  StaffPortalPage kalau login berhasil
-            }, 1000);
-        } else {
-            setMessage({ type: 'error', text: 'Staff credentials invalid.' });
+            const data = await response.json();
+            
+            if (response.ok) {
+                // Pastikan role staff atau admin
+                if (data.user.role !== 'staff' && data.user.role !== 'admin') {
+                    setMessage({ type: 'error', text: 'Access denied. Staff only.' });
+                    return;
+                }
+                
+                // Simpan token untuk fetch dengan auth
+                localStorage.setItem('access_token', data.access_token);
+                localStorage.setItem('user_data', JSON.stringify(data.user));
+
+                setMessage({ type: 'success', text: 'Staff Authentication Success!' });
+                
+                setTimeout(() => {
+                    onLoginSuccess();
+                }, 1000);
+            } else {
+                setMessage({ type: 'error', text: data.detail || 'Invalid staff credentials.' });
+            }
+        } catch (error) {
+            setMessage({ type: 'error', text: 'Connection failed. Please try again later.' });
+            console.error("Staff Login Error:", error);
         }
     };
 

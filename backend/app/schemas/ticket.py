@@ -24,6 +24,7 @@ class TicketReplyCreate(BaseModel):
 class TicketAttachmentResponse(BaseModel):
     id: int
     file_name: str
+    file_path: str
     file_size: int
     uploaded_at: datetime
     

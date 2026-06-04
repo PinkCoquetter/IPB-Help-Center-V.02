@@ -1,19 +1,27 @@
 import React, { useState } from 'react';
 import { HiSearch, HiOutlineMail, HiOutlineClipboardList, HiOutlineCheckCircle, HiRefresh } from 'react-icons/hi';
 
-export const StaffDashboardView = ({ tickets, onSelectTicket, onLogout }) => {
+export const StaffDashboardView = ({ tickets, onSelectTicket, onLogout, onRefresh }) => {
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [search, setSearch] = useState('');
 
   const stats = [
-    { label: 'Tiket Baru', count: tickets.filter(t => t.status === 'OPEN').length, sub: 'MENUNGGU TANGGAPAN', icon: <HiOutlineMail />, status: 'OPEN', color: 'text-blue-600' },
-    { label: 'Sedang Diproses', count: tickets.filter(t => t.status === 'IN PROGRESS').length, sub: 'PENANGANAN AKTIF', icon: <HiOutlineClipboardList />, status: 'IN PROGRESS', color: 'text-indigo-600' },
-    { label: 'Selesai', count: tickets.filter(t => t.status === 'RESOLVED').length, sub: 'PERMOHONAN DITUTUP', icon: <HiOutlineCheckCircle />, status: 'RESOLVED', color: 'text-emerald-600' },
+    { label: 'Tiket Baru', count: tickets.filter(t => t.status === 'open' || t.status === 'OPEN').length, sub: 'MENUNGGU TANGGAPAN', icon: <HiOutlineMail />, status: 'open', color: 'text-blue-600' },
+    { label: 'Sedang Diproses', count: tickets.filter(t => t.status === 'in_progress' || t.status === 'IN PROGRESS').length, sub: 'PENANGANAN AKTIF', icon: <HiOutlineClipboardList />, status: 'in_progress', color: 'text-indigo-600' },
+    { label: 'Selesai', count: tickets.filter(t => t.status === 'resolved' || t.status === 'RESOLVED').length, sub: 'PERMOHONAN DITUTUP', icon: <HiOutlineCheckCircle />, status: 'resolved', color: 'text-emerald-600' },
   ];
 
   const filteredTickets = tickets.filter(t => {
-    const matchStatus = filterStatus === 'ALL' || t.status === filterStatus;
-    const matchSearch = t.title.toLowerCase().includes(search.toLowerCase()) || t.id.toLowerCase().includes(search.toLowerCase());
+    let matchStatus = true;
+    if (filterStatus !== 'ALL') {
+      const tStat = t.status.toLowerCase().replace('_', ' ');
+      const fStat = filterStatus.toLowerCase().replace('_', ' ');
+      matchStatus = tStat === fStat;
+    }
+    const searchString = search.toLowerCase();
+    const matchSearch = t.title.toLowerCase().includes(searchString) || 
+                        (t.ticket_number && t.ticket_number.toLowerCase().includes(searchString)) ||
+                        (t.id && t.id.toString().toLowerCase().includes(searchString));
     return matchStatus && matchSearch;
   });
 
@@ -25,7 +33,7 @@ export const StaffDashboardView = ({ tickets, onSelectTicket, onLogout }) => {
           <p className="text-gray-500 font-medium font-public mt-1">Pantau status permohonan layanan akademik dan bantuan teknis mahasiswa IPB.</p>
         </div>
         <div className="flex gap-4">
-          <button className="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-600 shadow-sm hover:bg-gray-50">
+          <button onClick={onRefresh} className="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-600 shadow-sm hover:bg-gray-50">
             <HiRefresh /> Perbarui Antrian
           </button>
           <button onClick={onLogout} className="px-5 py-2.5 bg-red-50 text-red-600 rounded-xl text-xs font-bold hover:bg-red-100">Logout</button>
@@ -78,32 +86,32 @@ export const StaffDashboardView = ({ tickets, onSelectTicket, onLogout }) => {
           <tbody className="divide-y divide-gray-50">
             {filteredTickets.map((t) => (
               <tr key={t.id} className="hover:bg-gray-50/80 transition-colors group cursor-pointer" onClick={() => onSelectTicket(t.id)}>
-                <td className="px-10 py-7 text-[#0040A1] font-extrabold text-sm">#{t.id.replace('TKT-', 'TK-')}</td>
+                <td className="px-10 py-7 text-[#0040A1] font-extrabold text-sm">#{t.ticket_number || t.id}</td>
                <td className="px-10 py-7">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-full bg-[#006071] text-white flex items-center justify-center text-[10px] font-black uppercase">
                       {/* Ambil inisial dari nama mahasiswa */}
-                      {t.studentName ? t.studentName.charAt(0) : 'U'} 
+                      {t.student_name ? t.student_name.charAt(0) : (t.studentName ? t.studentName.charAt(0) : 'U')} 
                     </div>
                     <span className="text-sm font-bold text-gray-700">
-                      {t.studentName || 'Unknown Student'}
+                      {t.student_name || t.studentName || 'Unknown Student'}
                     </span>
                   </div>
                 </td>
                 <td className="px-10 py-7 text-sm text-gray-600 font-medium max-w-xs truncate">{t.title}</td>
                 <td className="px-10 py-7">
                   <span className="px-3 py-1 bg-gray-100 rounded-md text-[9px] font-black text-gray-400 uppercase tracking-widest">
-                    {t.id === 'TKT-9420' ? 'SPP' : 'IT SUPPORT'}
+                    {t.category ? t.category.name : 'UMUM'}
                   </span>
                 </td>
                 <td className="px-10 py-7 text-center">
                   <span className={`px-4 py-1.5 rounded-md text-[9px] font-black uppercase tracking-widest ${
-                    t.status === 'OPEN' ? 'bg-blue-50 text-blue-600 border border-blue-100' : t.status === 'IN PROGRESS' ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : 'bg-green-50 text-green-600 border border-green-100'
-                  }`}>{t.status === 'OPEN' ? 'BARU MASUK' : t.status === 'IN PROGRESS' ? 'DIPROSES' : 'SELESAI'}</span>
+                    (t.status === 'OPEN' || t.status === 'open') ? 'bg-blue-50 text-blue-600 border border-blue-100' : (t.status === 'IN PROGRESS' || t.status === 'in_progress') ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : 'bg-green-50 text-green-600 border border-green-100'
+                  }`}>{(t.status === 'OPEN' || t.status === 'open') ? 'BARU MASUK' : (t.status === 'IN PROGRESS' || t.status === 'in_progress') ? 'DIPROSES' : 'SELESAI'}</span>
                 </td>
                 <td className="px-10 py-7 text-right">
-                    <p className="text-[11px] font-bold text-gray-900">Oct 24</p>
-                    <p className="text-[10px] font-medium text-gray-400">09:15</p>
+                    <p className="text-[11px] font-bold text-gray-900">{new Date(t.created_at || t.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</p>
+                    <p className="text-[10px] font-medium text-gray-400">{new Date(t.created_at || t.date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</p>
                 </td>
               </tr>
             ))}

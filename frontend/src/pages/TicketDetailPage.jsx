@@ -1,47 +1,79 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { fetchWithAuth } from '../config/api';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { HiOutlineCloudUpload, HiChatAlt2, HiOutlineArrowNarrowLeft } from 'react-icons/hi';
 import { FileText, Paperclip, Trash2 } from 'lucide-react';
 
-const TicketDetailPage = ({ isLoggedIn, onLogout, tickets, updateTicket }) => {
+const TicketDetailPage = ({ isLoggedIn, onLogout }) => {
   const { id } = useParams();
   const navigate = useNavigate();
   
-  // Mencari data tiket dari state global berdasarkan ID di URL
-  const ticket = tickets.find(t => t.id === id);
-
-  // Gunakan pesan dari global state
-  const messages = ticket?.messages || [];
-
+  const [ticket, setTicket] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [replyText, setReplyText] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // State khusus file
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
+
+  const loadTicketDetail = async () => {
+    try {
+      const response = await fetchWithAuth(`/api/tickets/${id}`);
+      if (response.ok) {
+        const data = await response.json();
+        setTicket(data);
+        
+        // Konstruksi messages
+        const firstMessage = {
+          id: `desc-${data.id}`,
+          sender: data.student ? data.student.full_name : 'STUDENT',
+          role: 'student',
+          text: data.description,
+          time: new Date(data.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+          date: new Date(data.created_at).toLocaleDateString('en-GB'),
+          attachments: data.attachments ? data.attachments.map(a => {
+            const fileName = a.file_path ? a.file_path.split(/[\\/]/).pop() : a.file_name;
+            return {
+              name: a.file_name,
+              size: (a.file_size / 1024).toFixed(0) + ' KB',
+              url: `http://localhost:8000/uploads/${fileName}` // Adjust later to real API URL if needed
+            };
+          }) : []
+        };
+        
+        const replyMessages = (data.replies || []).map(r => ({
+          id: `reply-${r.id}`,
+          sender: r.sender ? r.sender.full_name : 'Unknown',
+          role: r.sender && (r.sender.role === 'staff' || r.sender.role === 'admin') ? 'staff' : 'student',
+          text: r.message,
+          time: new Date(r.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+          date: new Date(r.created_at).toLocaleDateString('en-GB'),
+          attachments: []
+        }));
+        
+        setMessages([firstMessage, ...replyMessages]);
+      }
+    } catch (e) {
+      console.error("Failed to load ticket", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadTicketDetail();
+  }, [id]);
 
   const handleFileSelect = (e) => {
     if (e.target.files) addFiles(e.target.files);
   };
 
-  const addFiles = async (files) => {
-    const filePromises = Array.from(files).map(file => {
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          resolve({
-            name: file.name,
-            size: (file.size / 1024).toFixed(0) + ' KB',
-            type: file.type,
-            url: e.target.result
-          });
-        };
-        reader.readAsDataURL(file);
-      });
-    });
-
-    const newFiles = await Promise.all(filePromises);
+  const addFiles = (files) => {
+    // Kita hanya simpan raw File untuk dikirim via FormData nanti
+    const newFiles = Array.from(files);
     setUploadedFiles(prev => [...prev, ...newFiles]);
   };
 
@@ -49,29 +81,42 @@ const TicketDetailPage = ({ isLoggedIn, onLogout, tickets, updateTicket }) => {
     setUploadedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleSendReply = (e) => {
+  const handleSendReply = async (e) => {
     e.preventDefault();
     if (!replyText.trim() && uploadedFiles.length === 0) return;
+    setIsSubmitting(true);
     
-    const now = new Date();
-    const timeNow = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-    const dateNow = now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-
-    const newMessage = {
-      id: Date.now(),
-      sender: "STUDENT USER",
-      role: 'student',
-      text: replyText,
-      attachments: [...uploadedFiles],
-      time: timeNow,
-      date: dateNow
-    };
-
-    updateTicket(ticket.id, { messages: [...messages, newMessage] });
-    setReplyText('');  
-    setUploadedFiles([]);
+    try {
+      if (replyText.trim()) {
+        await fetchWithAuth(`/api/tickets/${ticket.id}/reply`, {
+          method: 'POST',
+          body: JSON.stringify({ message: replyText })
+        });
+      }
+      
+      if (uploadedFiles.length > 0) {
+        for (const file of uploadedFiles) {
+          const formData = new FormData();
+          formData.append('file', file);
+          await fetchWithAuth(`/api/tickets/${ticket.id}/attachments`, {
+            method: 'POST',
+            body: formData
+          });
+        }
+      }
+      
+      setReplyText('');  
+      setUploadedFiles([]);
+      await loadTicketDetail();
+    } catch (e) {
+      console.error("Failed to send reply", e);
+      alert("Gagal mengirim balasan.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
+  if (loading) return <div className="p-20 text-center font-manrope text-2xl font-bold">Memuat Tiket...</div>;
   if (!ticket) return <div className="p-20 text-center font-manrope text-2xl font-bold">Ticket Not Found</div>;
 
   return (
@@ -90,12 +135,12 @@ const TicketDetailPage = ({ isLoggedIn, onLogout, tickets, updateTicket }) => {
         <div className="mb-12">
           <h1 className="text-5xl font-[800] text-gray-900 mb-4 tracking-tighter font-manrope">{ticket.title}</h1>
           <div className="flex items-center gap-4">
-            <span className="text-[10px] font-black px-3 py-1 bg-[#0040A1] text-white rounded uppercase tracking-widest">{ticket.status}</span>
-            <span className="text-[10px] font-bold text-gray-300 tracking-[0.3em]">#{ticket.id}</span>
+            <span className="text-[10px] font-black px-3 py-1 bg-[#0040A1] text-white rounded uppercase tracking-widest">{ticket.status.replace('_', ' ')}</span>
+            <span className="text-[10px] font-bold text-gray-300 tracking-[0.3em]">#{ticket.ticket_number || ticket.id}</span>
             <div className="flex-grow"></div>
             <div className="text-right">
                 <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Submitted on</p>
-                <p className="text-sm font-bold text-gray-900">{ticket.date}</p>
+                <p className="text-sm font-bold text-gray-900">{new Date(ticket.created_at).toLocaleDateString('en-GB')}</p>
             </div>
           </div>
         </div>
@@ -111,10 +156,10 @@ const TicketDetailPage = ({ isLoggedIn, onLogout, tickets, updateTicket }) => {
                   </div>
                   <div>
                     <p className="text-[11px] font-black text-gray-900 uppercase tracking-tight font-manrope">
-                      {msg.role === 'staff' ? msg.sender : "JOHANNA D."} 
+                      {msg.sender} 
                     </p>
                     <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest font-public">
-                      {msg.role === 'staff' ? 'Support Team' : `STUDENT ID: ${ticket.nim}`} 
+                      {msg.role === 'staff' ? 'Support Team' : (ticket.student?.nim ? `STUDENT ID: ${ticket.student.nim}` : 'STUDENT')} 
                     </p>
                   </div>
                 </div>
@@ -191,8 +236,8 @@ const TicketDetailPage = ({ isLoggedIn, onLogout, tickets, updateTicket }) => {
             </div>
 
             <div className="flex items-center justify-between pt-8 border-t border-gray-50">
-              <button type="submit" className="bg-[#0040A1] text-white px-14 py-4 rounded-2xl font-bold text-sm uppercase tracking-widest shadow-lg hover:bg-blue-800 transition-all ml-auto font-manrope">
-                Kirim
+              <button disabled={isSubmitting} type="submit" className="bg-[#0040A1] text-white px-14 py-4 rounded-2xl font-bold text-sm uppercase tracking-widest shadow-lg hover:bg-blue-800 transition-all ml-auto font-manrope disabled:opacity-50">
+                {isSubmitting ? 'Mengirim...' : 'Kirim'}
               </button>
             </div>
           </form>

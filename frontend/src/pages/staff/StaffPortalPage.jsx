@@ -5,13 +5,36 @@ import { StaffDashboardView } from './StaffDashboardView';
 import { StaffTicketDetailView } from './StaffTicketDetailView';
 import { StaffLoginView } from './StaffLoginView';
 
-const StaffPortalPage = ({ tickets, updateTicket }) => {
+const StaffPortalPage = () => {
   const [isStaffLoggedIn, setIsStaffLoggedIn] = useState(() => {
     return localStorage.getItem('isStaffLoggedIn') === 'true';
   });
   const [selectedTicketId, setSelectedTicketId] = useState(() => {
     return localStorage.getItem('staffSelectedTicketId') || null;
   });
+  const [tickets, setTickets] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const loadTickets = async () => {
+    if (!isStaffLoggedIn) return;
+    setLoading(true);
+    try {
+      const { fetchWithAuth } = await import('../../config/api');
+      const response = await fetchWithAuth('/api/tickets/');
+      if (response.ok) {
+        const data = await response.json();
+        setTickets(data);
+      }
+    } catch (error) {
+      console.error("Error loading tickets:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    loadTickets();
+  }, [isStaffLoggedIn]);
 
   React.useEffect(() => {
     if (isStaffLoggedIn) {
@@ -29,7 +52,13 @@ const StaffPortalPage = ({ tickets, updateTicket }) => {
     }
   }, [selectedTicketId]);
 
-  const activeTicket = tickets.find(t => t.id === selectedTicketId);
+  const activeTicket = tickets.find(t => t.id === selectedTicketId || t.ticket_number === selectedTicketId);
+
+  const handleLogout = () => {
+    setIsStaffLoggedIn(false);
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('user_data');
+  };
 
   return (
     <div className="min-h-screen bg-[#F1F4F9] font-sans selection:bg-blue-100 selection:text-[#0040A1]">
@@ -38,12 +67,14 @@ const StaffPortalPage = ({ tickets, updateTicket }) => {
           <motion.div key="login" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <StaffLoginView onLoginSuccess={() => setIsStaffLoggedIn(true)} />
           </motion.div>
-        ) : selectedTicketId && activeTicket ? (
+        ) : selectedTicketId ? (
           <motion.div key="detail" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
             <StaffTicketDetailView 
-              ticket={activeTicket} 
-              onBack={() => setSelectedTicketId(null)} 
-              updateTicket={updateTicket}
+              ticketId={selectedTicketId} 
+              onBack={() => {
+                setSelectedTicketId(null);
+                loadTickets();
+              }}
             />
           </motion.div>
         ) : (
@@ -51,7 +82,8 @@ const StaffPortalPage = ({ tickets, updateTicket }) => {
             <StaffDashboardView 
               tickets={tickets} 
               onSelectTicket={(id) => setSelectedTicketId(id)} 
-              onLogout={() => setIsStaffLoggedIn(false)}
+              onLogout={handleLogout}
+              onRefresh={loadTickets}
             />
           </motion.div>
         )}

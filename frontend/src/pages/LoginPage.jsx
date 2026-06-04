@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import API_URL from '../config/api';
 import { useNavigate, Link } from 'react-router-dom';
 import { 
   HiOutlineLockClosed, 
@@ -19,18 +20,40 @@ const LoginPage = ({ onLogin }) => {
         const { name, value } = e.target;
         setFormData({ ...formData, [name]: value });
     };
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setMessage({ type: '', text: '' });
-
-        if (formData.username === 'student@apps.ipb.ac.id' && formData.password === '12345678') {
-            setMessage({ type: 'success', text: 'Login successful!' });
-            setTimeout(() => {
-                onLogin();
-                navigate('/dashboard');
-            }, 1500);
-        } else {
-            setMessage({ type: 'error', text: 'Invalid username or password.' });
+        
+        try {
+            const response = await fetch(`${API_URL}/api/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: formData.username,
+                    password: formData.password
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                // Pastikan role student
+                if (data.user.role !== 'student') {
+                    setMessage({ type: 'error', text: 'This portal is for students only.' });
+                    return;
+                }
+                
+                setMessage({ type: 'success', text: 'Login successful!' });
+                setTimeout(() => {
+                    onLogin(data.user, data.access_token);
+                    navigate('/dashboard');
+                }, 1000);
+            } else {
+                setMessage({ type: 'error', text: data.detail || 'Invalid username or password.' });
+            }
+        } catch (error) {
+            setMessage({ type: 'error', text: 'Connection failed. Please try again later.' });
+            console.error("Login Error:", error);
         }
     };
 

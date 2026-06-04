@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { fetchWithAuth } from '../../../config/api';
 import { 
   ArrowLeft, FileText, Upload, Save, ShieldCheck, 
   CheckCircle, Loader2, Paperclip, Trash2, 
@@ -7,13 +8,14 @@ import {
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 
-export const StaffTicketDetailView = ({ ticket, onBack, updateTicket }) => {
+export const StaffTicketDetailView = ({ ticketId, onBack }) => {
   // --- STATE ---
-  const [statusValue, setStatusValue] = useState(ticket.status);
-  const [staffValue, setStaffValue] = useState(ticket.assignedStaff || 'Tsabitta');
+  const [ticket, setTicket] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [statusValue, setStatusValue] = useState('');
+  const [staffValue, setStaffValue] = useState('');
   const [replyContent, setReplyContent] = useState('');
-  // Gunakan pesan dari global state
-  const messages = ticket?.messages || [];
+  const [messages, setMessages] = useState([]);
 
   // State khusus file
   const [uploadedFiles, setUploadedFiles] = useState([]);
@@ -23,6 +25,57 @@ export const StaffTicketDetailView = ({ ticket, onBack, updateTicket }) => {
   const [isSavingStatus, setIsSavingStatus] = useState(false);
   const [isSendingReply, setIsSendingReply] = useState(false);
   const [notification, setNotification] = useState(null);
+
+  const loadTicketDetail = async () => {
+    try {
+      const response = await fetchWithAuth(`/api/tickets/${ticketId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setTicket(data);
+        setStatusValue(data.status);
+        setStaffValue(data.assigned_staff ? data.assigned_staff.full_name : 'Staff');
+        
+        // Konstruksi messages
+        const firstMessage = {
+          id: `desc-${data.id}`,
+          sender: data.student ? data.student.full_name : 'STUDENT',
+          role: 'student',
+          text: data.description,
+          time: new Date(data.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+          date: new Date(data.created_at).toLocaleDateString('en-GB'),
+          attachments: data.attachments ? data.attachments.map(a => {
+            const fileName = a.file_path ? a.file_path.split(/[\\/]/).pop() : a.file_name;
+            return {
+              name: a.file_name,
+              size: (a.file_size / 1024).toFixed(0) + ' KB',
+              url: `http://localhost:8000/uploads/${fileName}`
+            };
+          }) : []
+        };
+        
+        const replyMessages = (data.replies || []).map(r => ({
+          id: `reply-${r.id}`,
+          sender: r.sender ? r.sender.full_name : 'Unknown',
+          role: r.sender && (r.sender.role === 'staff' || r.sender.role === 'admin') ? 'staff' : 'student',
+          text: r.message,
+          time: new Date(r.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+          date: new Date(r.created_at).toLocaleDateString('en-GB'),
+          attachments: []
+        }));
+        
+        setMessages([firstMessage, ...replyMessages]);
+      }
+    } catch (e) {
+      console.error("Failed to load ticket", e);
+      showNotification('error', 'Gagal memuat tiket.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadTicketDetail();
+  }, [ticketId]);
   // unused state removed
 
   // --- LOGIC NOTIFIKASI ---
@@ -42,23 +95,8 @@ export const StaffTicketDetailView = ({ ticket, onBack, updateTicket }) => {
     if (e.target.files) addFiles(e.target.files);
   };
 
-  const addFiles = async (files) => {
-    const filePromises = Array.from(files).map(file => {
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          resolve({
-            name: file.name,
-            size: (file.size / 1024).toFixed(0) + ' KB',
-            type: file.type,
-            url: e.target.result
-          });
-        };
-        reader.readAsDataURL(file);
-      });
-    });
-
-    const newFiles = await Promise.all(filePromises);
+  const addFiles = (files) => {
+    const newFiles = Array.from(files);
     setUploadedFiles(prev => [...prev, ...newFiles]);
   };
 
@@ -66,47 +104,67 @@ export const StaffTicketDetailView = ({ ticket, onBack, updateTicket }) => {
     setUploadedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  // --- HANDLERS ---
-  const handleSaveStatus = () => {
+  const handleSaveStatus = async () => {
     setIsSavingStatus(true);
-    setTimeout(() => {
-      updateTicket(ticket.id, { status: statusValue, assignedStaff: staffValue });
-      showNotification('success', 'Berhasil memperbarui status tiket.');
+    try {
+      const response = await fetchWithAuth(`/api/tickets/${ticketId}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: statusValue, note: '' })
+      });
+      if (response.ok) {
+        showNotification('success', 'Berhasil memperbarui status tiket.');
+        await loadTicketDetail();
+      } else {
+        showNotification('error', 'Gagal memperbarui status.');
+      }
+    } catch (error) {
+      showNotification('error', 'Koneksi gagal.');
+    } finally {
       setIsSavingStatus(false);
-    }, 500);
+    }
   };
 
-  const handleSendReply = (e) => {
+  const handleSendReply = async (e) => {
     e.preventDefault();
-    if (statusValue === 'RESOLVED') {
+    if (statusValue === 'resolved' || statusValue === 'RESOLVED') {
       showNotification('error', 'Tiket sudah ditutup!');
       return;
     }
     if (!replyContent.trim() && uploadedFiles.length === 0) return;
 
     setIsSendingReply(true);
-    setTimeout(() => {
-      const now = new Date();
-      const timeNow = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-      const dateNow = now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-
-      const newMessage = {
-        id: Date.now(),
-        sender: staffValue + " (Staf)",
-        role: 'staff',
-        text: replyContent,
-        attachments: [...uploadedFiles], // Masukkan file ke dalam pesan
-        time: timeNow,
-        date: dateNow
-      };
-
-      updateTicket(ticket.id, { messages: [...messages, newMessage] });
-      setReplyContent('');
-      setUploadedFiles([]); // Kosongkan list file setelah kirim
+    
+    try {
+      if (replyContent.trim()) {
+        await fetchWithAuth(`/api/tickets/${ticket.id}/reply`, {
+          method: 'POST',
+          body: JSON.stringify({ message: replyContent })
+        });
+      }
+      
+      if (uploadedFiles.length > 0) {
+        for (const file of uploadedFiles) {
+          const formData = new FormData();
+          formData.append('file', file);
+          await fetchWithAuth(`/api/tickets/${ticket.id}/attachments`, {
+            method: 'POST',
+            body: formData
+          });
+        }
+      }
+      
+      setReplyContent('');  
+      setUploadedFiles([]);
+      await loadTicketDetail();
       showNotification('success', 'Balasan dikirim!');
+    } catch (error) {
+      showNotification('error', 'Gagal mengirim balasan.');
+    } finally {
       setIsSendingReply(false);
-    }, 600);
+    }
   };
+
+  if (loading || !ticket) return <div className="p-20 text-center font-manrope text-2xl font-bold">Memuat Tiket...</div>;
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] font-manrope">
@@ -171,7 +229,7 @@ export const StaffTicketDetailView = ({ ticket, onBack, updateTicket }) => {
                 <span className="text-[12px] font-black uppercase tracking-widest">Kirim Tanggapan</span>
               </div>
 
-              <textarea value={replyContent} onChange={(e) => setReplyContent(e.target.value)} disabled={statusValue === 'RESOLVED'}
+              <textarea value={replyContent} onChange={(e) => setReplyContent(e.target.value)} disabled={statusValue === 'resolved' || statusValue === 'RESOLVED'}
                 placeholder="Ketik rincian tanggapan di sini..." className="w-full rounded-[2rem] border-none bg-[#F8FAFC] p-8 text-sm font-medium outline-none focus:ring-2 focus:ring-[#0040A1] min-h-[150px]"
               />
 
@@ -213,7 +271,7 @@ export const StaffTicketDetailView = ({ ticket, onBack, updateTicket }) => {
                   <ShieldCheck size={18} className="text-emerald-500" />
                   <span className="text-[10px] font-black uppercase">Secure Channel</span>
                 </div>
-                <button type="submit" disabled={isSendingReply || statusValue === 'RESOLVED'}
+                <button type="submit" disabled={isSendingReply || statusValue === 'resolved' || statusValue === 'RESOLVED'}
                   className="bg-[#0040A1] text-white px-12 py-4 rounded-2xl font-black text-[12px] uppercase shadow-xl hover:bg-blue-800 transition-all active:scale-95 disabled:opacity-50"
                 >
                   {isSendingReply ? 'Mengirim...' : 'Kirim Balasan'}
@@ -231,17 +289,17 @@ export const StaffTicketDetailView = ({ ticket, onBack, updateTicket }) => {
             
             {/* Avatar Bulat: Inisial diambil otomatis dari huruf pertama nama */}
             <div className="w-24 h-24 bg-[#006071] text-white rounded-full flex items-center justify-center text-3xl font-black mx-auto mb-6 shadow-lg shadow-teal-900/10 uppercase">
-              {ticket.studentName ? ticket.studentName.charAt(0) : 'U'}
+              {ticket.student ? ticket.student.full_name.charAt(0) : (ticket.studentName ? ticket.studentName.charAt(0) : 'U')}
             </div>
 
             {/* Nama Mahasiswa: Diambil dari data tiket */}
             <h4 className="text-xl font-black text-gray-900 mb-1 font-manrope">
-              {ticket.studentName || 'Unknown Student'}
+              {ticket.student ? ticket.student.full_name : (ticket.studentName || 'Unknown Student')}
             </h4>
 
             {/* NIM: Diambil dari data tiket */}
             <p className="text-[11px] font-bold text-gray-400 uppercase tracking-[0.2em] font-public">
-              NIM: {ticket.nim || 'N/A'}
+              NIM: {ticket.student?.nim || ticket.nim || 'N/A'}
             </p>
           </div>
 
@@ -252,9 +310,9 @@ export const StaffTicketDetailView = ({ ticket, onBack, updateTicket }) => {
                 <div>
                   <label className="text-[10px] font-black text-gray-300 uppercase mb-3 block tracking-widest">Update Status</label>
                   <select value={statusValue} onChange={(e) => setStatusValue(e.target.value)} className="w-full p-5 bg-[#F8FAFC] rounded-2xl font-bold text-sm outline-none border border-gray-100">
-                    <option value="OPEN">Baru Masuk (OPEN)</option>
-                    <option value="IN PROGRESS">Sedang Diproses (IN PROGRESS)</option>
-                    <option value="RESOLVED">Selesai (RESOLVED)</option>
+                    <option value="open">Baru Masuk (OPEN)</option>
+                    <option value="in_progress">Sedang Diproses (IN PROGRESS)</option>
+                    <option value="resolved">Selesai (RESOLVED)</option>
                   </select>
                 </div>
                 <div>

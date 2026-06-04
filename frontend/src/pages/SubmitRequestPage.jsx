@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
+import { fetchWithAuth } from '../config/api';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { HiOutlineCloudUpload, HiOutlineShieldCheck } from 'react-icons/hi';
 
-const SubmitRequestPage = ({ isLoggedIn, onLogout, addTicket }) => {
+const SubmitRequestPage = ({ isLoggedIn, onLogout }) => {
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -19,6 +20,7 @@ const SubmitRequestPage = ({ isLoggedIn, onLogout, addTicket }) => {
     description: ''
   });
   const [attachment, setAttachment] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Kategori topik sesuai FAQ
   const topicCategories = [
@@ -35,52 +37,56 @@ const SubmitRequestPage = ({ isLoggedIn, onLogout, addTicket }) => {
 
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setAttachment({
-          name: file.name,
-          size: file.size,
-          type: file.type,
-          url: event.target.result
-        });
-      };
-      reader.readAsDataURL(file);
+      setAttachment(e.target.files[0]); // Simpan raw file untuk FormData
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (ticketData.title && ticketData.nim && ticketData.description) {
-      const now = new Date();
-    const ticketId = `TKT-${Math.floor(1000 + Math.random() * 9000)}`;
-    const dateNow = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    const timeNow = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-      
-      const attachmentsArray = attachment ? [{
-        name: attachment.name,
-        size: (attachment.size / 1024).toFixed(0) + ' KB',
-        type: attachment.type,
-        url: attachment.url
-      }] : [];
+    if (ticketData.title && ticketData.description) {
+      setIsSubmitting(true);
+      try {
+        const catObj = topicCategories.find(c => c.name === ticketData.topic);
+        const categoryId = catObj ? catObj.id : 1; // Default ke 1 jika tidak ada
+        
+        const response = await fetchWithAuth('/api/tickets/', {
+          method: 'POST',
+          body: JSON.stringify({
+            title: ticketData.title,
+            description: ticketData.description,
+            category_id: categoryId,
+            priority: 'medium'
+          })
+        });
 
-      addTicket({
-      id: ticketId,
-      status: 'OPEN',
-      title: ticketData.title,
-      desc: ticketData.description,
-      studentName: 'JOHANNA D.', // Nanti ini bisa diambil dari data user yang sedang login
-      nim: ticketData.nim,
-      date: dateNow,
-      timestamp: timeNow,
-      attachments: attachmentsArray
-    });
-
-
-navigate(`/tickets/${ticketId}`);
+        if (response.ok) {
+          const data = await response.json();
+          const ticketId = data.ticket_id;
+          
+          if (attachment) {
+            const formData = new FormData();
+            formData.append('file', attachment);
+            
+            await fetchWithAuth(`/api/tickets/${ticketId}/attachments`, {
+              method: 'POST',
+              body: formData
+            });
+          }
+          
+          navigate(`/tickets/${ticketId}`);
+        } else {
+          const errData = await response.json();
+          alert(`Gagal membuat tiket: ${errData.detail || 'Terjadi kesalahan'}`);
+        }
+      } catch (error) {
+        console.error("Error submitting ticket:", error);
+        alert("Koneksi gagal. Silakan coba lagi.");
+      } finally {
+        setIsSubmitting(false);
+      }
     } else {
-      alert("Mohon lengkapi Title, NIM, dan Deskripsi");      
+      alert("Mohon lengkapi Judul dan Deskripsi permasalahan");      
     } 
   };
 
@@ -158,8 +164,8 @@ navigate(`/tickets/${ticketId}`);
                 <HiOutlineShieldCheck className="text-xl" />
                 <span className="text-[9px] font-black uppercase tracking-[0.2em]">End-to-end secure processing</span>
               </div>
-              <button type="submit" className="w-full md:w-auto bg-gradient-to-r from-[#0040A1] to-[#0056D2] text-white px-14 py-4 rounded-2xl font-bold text-sm font-manrope uppercase tracking-widest shadow-xl shadow-blue-100 transition-all active:scale-95">
-                Buat Tiket
+              <button disabled={isSubmitting} type="submit" className="w-full md:w-auto bg-gradient-to-r from-[#0040A1] to-[#0056D2] text-white px-14 py-4 rounded-2xl font-bold text-sm font-manrope uppercase tracking-widest shadow-xl shadow-blue-100 transition-all active:scale-95 disabled:opacity-50">
+                {isSubmitting ? 'Memproses...' : 'Buat Tiket'}
               </button>
             </div>
           </form>

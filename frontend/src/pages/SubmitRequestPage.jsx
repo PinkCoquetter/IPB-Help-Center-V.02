@@ -7,8 +7,6 @@ import NotificationBanner from '../components/Notification';
 const SubmitRequestPage = ({ isLoggedIn, onLogout, addTicket }) => {
   const navigate = useNavigate();
 
-  showNotification('success', 'Tiket berhasil dibuat!');
-  
   const [ticketData, setTicketData] = useState({
     title: '',
     topic: '',
@@ -28,6 +26,7 @@ const SubmitRequestPage = ({ isLoggedIn, onLogout, addTicket }) => {
   const stayHere = () => {
     setShowLeaveModal(false);
   };
+  
 
   const isDirty =
   ticketData.title ||
@@ -81,6 +80,8 @@ const SubmitRequestPage = ({ isLoggedIn, onLogout, addTicket }) => {
       date: dateNow,
       timestamp: timeNow 
     });
+
+    showNotification('success', 'Tiket berhasil dibuat!');
     
     setTimeout(() => {
       navigate(`/tickets/${ticketId}`);
@@ -98,6 +99,8 @@ const SubmitRequestPage = ({ isLoggedIn, onLogout, addTicket }) => {
     setNotification(null);
   }, 3000);
 };
+
+  
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] font-sans">

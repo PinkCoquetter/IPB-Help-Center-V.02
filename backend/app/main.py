@@ -7,6 +7,9 @@ from contextlib import asynccontextmanager
 import os
 import logging
 
+from fastapi_cache import FastAPICache
+from fastapi_cache.backends.inmemory import InMemoryBackend
+
 # --- IMPORT SECURITY ---
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -22,6 +25,7 @@ from app.routers import auth, tickets, categories, services, faqs, notifications
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+    FastAPICache.init(InMemoryBackend(), prefix="helpcenter-cache")
     yield
     print("👋 Server stopped.")
 

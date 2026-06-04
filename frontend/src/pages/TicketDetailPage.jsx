@@ -44,7 +44,8 @@ const now = new Date();
     };
 
     setMessages([...messages, newMessage]);
-    setReplyText('');  
+    setReplyText(''); 
+    toast.success('Balasan berhasil dikirim');
   };
 
   if (!ticket) return <div className="p-20 text-center font-manrope text-2xl font-bold">Ticket Not Found</div>;

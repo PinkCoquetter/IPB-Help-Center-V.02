@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { HiOutlineCloudUpload, HiOutlineShieldCheck } from 'react-icons/hi';
+import { toast } from 'react-toastify';
 
 const SubmitRequestPage = ({ isLoggedIn, onLogout, addTicket }) => {
   const navigate = useNavigate();
   const [ticketData, setTicketData] = useState({
     title: '',
-    topic: 'Select a topic',
+    topic: '',
     nim: '',
     description: ''
   });
@@ -20,7 +21,7 @@ const SubmitRequestPage = ({ isLoggedIn, onLogout, addTicket }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    if (ticketData.title && ticketData.nim && ticketData.description) {
+    if (ticketData.title && ticketData.nim && ticketData.description && ticketData.topic) {
       const now = new Date();
     const ticketId = `TKT-${Math.floor(1000 + Math.random() * 9000)}`;
     const dateNow = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -37,11 +38,15 @@ const SubmitRequestPage = ({ isLoggedIn, onLogout, addTicket }) => {
       timestamp: timeNow 
     });
 
-
-navigate(`/tickets/${ticketId}`);
-    } else {
-      alert("Mohon lengkapi Title, NIM, dan Deskripsi");      
-    } 
+    toast.success('Tiket berhasil dibuat!');
+    
+    setTimeout(() => {
+      navigate(`/tickets/${ticketId}`);
+    }, 1500);
+  
+  } else {
+      toast.error('Mohon lengkapi Title, NIM, dan Deskripsi');
+    }
   };
 
   return (
@@ -77,10 +82,11 @@ navigate(`/tickets/${ticketId}`);
               <div className="space-y-4">
                 <label className="text-[10px] font-black text-gray-800 uppercase tracking-[0.2em] ml-1">Topik</label>
                 <select name="topic" value={ticketData.topic} onChange={handleChange} className="w-full px-8 py-5 bg-[#f8fafc] rounded-[1.5rem] border-none focus:ring-2 focus:ring-[#0040A1] outline-none text-sm font-medium cursor-pointer">
-                  <option>Pilh topik permasalahan</option>
+                  <option value>Pilh topik permasalahan</option>
                   <option>Akademik</option>
                   <option>IT Support</option>
                   <option>UKT / Keuangan</option>
+                  <option>Fasilitas</option>
                 </select>
               </div>
             </div>

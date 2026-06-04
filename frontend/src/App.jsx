@@ -7,6 +7,8 @@ import SubmitRequestPage from './pages/SubmitRequestPage';
 import MyTicketsPage from './pages/MyTicketsPage';
 import TicketDetailPage from './pages/TicketDetailPage';
 import StaffPortalPage from './pages/staff/StaffPortalPage'; 
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 
 function App() {
@@ -41,7 +43,7 @@ function App() {
         <Route path="/login" element={isLoggedIn ? <Navigate to="/dashboard" replace /> : <LoginPage onLogin={handleLogin} />} />
         <Route path="/dashboard" element={<DashboardPage isLoggedIn={isLoggedIn} onLogout={handleLogout} />} />
        
-       
+        
         {/* --- ROUTES STAFF (Tambahkan ini) --- */}
          <Route 
           path="/staff/*" 
@@ -67,6 +69,17 @@ function App() {
 
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
+      
+      <ToastContainer
+      position="top-center"
+      autoClose={3000}
+      hideProgressBar={false}
+      newestOnTop
+      closeOnClick
+      pauseOnHover
+      draggable
+      theme="light"
+    />
     </Router>
   );
 }

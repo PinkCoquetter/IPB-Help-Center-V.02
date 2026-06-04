@@ -75,14 +75,18 @@ export const StaffTicketDetailView = ({ ticket, onBack, updateTicket }) => {
 
     setIsSendingReply(true);
     setTimeout(() => {
+      const now = new Date();
+      const timeNow = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+      const dateNow = now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+
       const newMessage = {
         id: Date.now(),
         sender: staffValue + " (Staf)",
         role: 'staff',
         text: replyContent,
         attachments: [...uploadedFiles], // Masukkan file ke dalam pesan
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        date: "Hari ini"
+        time: timeNow,
+        date: dateNow
       };
 
       updateTicket(ticket.id, { messages: [...messages, newMessage] });

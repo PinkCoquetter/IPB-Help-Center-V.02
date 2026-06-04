@@ -64,11 +64,24 @@ function App() {
   }, []);
 
   const addTicket = (newTicket) => {
+    const now = new Date();
+    const timeNow = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    const dateNow = now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+
     // Beri pesan pertama (deskripsi) ke tiket baru
     const ticketWithMessages = {
       ...newTicket,
+      date: dateNow, // Override hardcoded date from SubmitRequestPage if any
       messages: [
-        { id: 1, sender: 'STUDENT USER', role: 'student', text: newTicket.desc, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), date: newTicket.date }
+        { 
+          id: 1, 
+          sender: 'STUDENT USER', 
+          role: 'student', 
+          text: newTicket.desc, 
+          time: timeNow, 
+          date: dateNow,
+          attachments: newTicket.attachments || [] 
+        }
       ]
     };
     setTickets([ticketWithMessages, ...tickets]);

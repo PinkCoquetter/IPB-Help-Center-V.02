@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { HiOutlineCloudUpload, HiChatAlt2, HiOutlineArrowNarrowLeft } from 'react-icons/hi';
+import { FileText, Paperclip, Trash2 } from 'lucide-react';
 
 const TicketDetailPage = ({ isLoggedIn, onLogout, tickets, updateTicket }) => {
   const { id } = useParams();
@@ -14,24 +15,50 @@ const TicketDetailPage = ({ isLoggedIn, onLogout, tickets, updateTicket }) => {
   const messages = ticket?.messages || [];
 
   const [replyText, setReplyText] = useState('');
+  
+  // State khusus file
+  const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const handleFileSelect = (e) => {
+    if (e.target.files) addFiles(e.target.files);
+  };
+
+  const addFiles = (files) => {
+    const newFiles = Array.from(files).map(file => ({
+      name: file.name,
+      size: (file.size / 1024).toFixed(0) + ' KB',
+      type: file.type
+    }));
+    setUploadedFiles(prev => [...prev, ...newFiles]);
+  };
+
+  const removeFile = (index) => {
+    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+  };
 
   const handleSendReply = (e) => {
     e.preventDefault();
-    if (!replyText.trim()) return;
-const now = new Date();
-  const timeNow = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    if (!replyText.trim() && uploadedFiles.length === 0) return;
+    
+    const now = new Date();
+    const timeNow = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    const dateNow = now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
     const newMessage = {
       id: Date.now(),
       sender: "STUDENT USER",
       role: 'student',
       text: replyText,
+      attachments: [...uploadedFiles],
       time: timeNow,
-      date: "Today"
+      date: dateNow
     };
 
     updateTicket(ticket.id, { messages: [...messages, newMessage] });
     setReplyText('');  
+    setUploadedFiles([]);
   };
 
   if (!ticket) return <div className="p-20 text-center font-manrope text-2xl font-bold">Ticket Not Found</div>;
@@ -85,6 +112,22 @@ const now = new Date();
               <p className={`text-sm font-medium leading-relaxed px-2 ${msg.role === 'staff' ? 'text-gray-800' : 'text-gray-500 italic'}`}>
                 "{msg.text}"
               </p>
+              {/* Tampilan Lampiran di dalam Bubble */}
+              {msg.attachments && msg.attachments.length > 0 && (
+                <div className="grid grid-cols-2 gap-4 mt-6 border-t border-gray-50 pt-6">
+                  {msg.attachments.map((file, idx) => (
+                    <div key={idx} className="flex items-center gap-3 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                      <div className="w-10 h-10 bg-blue-50 text-[#0040A1] rounded-xl flex items-center justify-center">
+                        <FileText size={20} />
+                      </div>
+                      <div className="overflow-hidden">
+                        <p className="text-xs font-bold text-gray-800 truncate">{file.name}</p>
+                        <p className="text-[10px] text-gray-400 font-bold uppercase">{file.size}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -106,10 +149,34 @@ const now = new Date();
             {/* ATTACHMENT DI BALASAN */}
             <div className="space-y-4">
               <label className="text-[10px] font-black text-gray-800 uppercase tracking-[0.2em] ml-1 italic">Attachments (Optional)</label>
-              <div className="border-2 border-dashed border-gray-100 rounded-[2rem] p-10 flex flex-col items-center justify-center bg-[#f8fafc] hover:bg-gray-50 transition-colors cursor-pointer group">
-                <HiOutlineCloudUpload className="text-3xl text-gray-300 group-hover:text-[#0040A1] mb-2" />
+              <div 
+                onClick={() => fileInputRef.current?.click()}
+                onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={(e) => { e.preventDefault(); setIsDragging(false); addFiles(e.dataTransfer.files); }}
+                className={`border-2 border-dashed rounded-[2rem] p-10 flex flex-col items-center justify-center transition-colors cursor-pointer group ${
+                  isDragging ? 'border-[#0040A1] bg-blue-50' : 'border-gray-100 bg-[#f8fafc] hover:bg-gray-50'
+                }`}
+              >
+                <input type="file" multiple ref={fileInputRef} onChange={handleFileSelect} className="hidden" />
+                <HiOutlineCloudUpload className={`text-3xl mb-2 ${isDragging ? 'text-[#0040A1]' : 'text-gray-300 group-hover:text-[#0040A1]'}`} />
                 <p className="text-xs font-bold text-gray-500 font-public tracking-tight">Tambah file pendukung balasan</p>
               </div>
+
+              {/* List File yang terpilih sebelum dikirim */}
+              {uploadedFiles.length > 0 && (
+                <div className="flex flex-wrap gap-3 mt-4">
+                  {uploadedFiles.map((file, index) => (
+                    <div key={index} className="flex items-center gap-3 bg-white border border-blue-100 p-3 pl-4 rounded-full shadow-sm">
+                      <Paperclip size={14} className="text-[#0040A1]" />
+                      <span className="text-xs font-bold text-gray-700">{file.name}</span>
+                      <button type="button" onClick={() => removeFile(index)} className="text-red-400 hover:text-red-600 p-1">
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="flex items-center justify-between pt-8 border-t border-gray-50">

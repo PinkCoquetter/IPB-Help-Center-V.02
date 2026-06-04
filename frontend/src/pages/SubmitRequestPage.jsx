@@ -48,6 +48,12 @@ const SubmitRequestPage = ({ isLoggedIn, onLogout, addTicket }) => {
     const dateNow = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     const timeNow = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
       
+      const attachmentsArray = attachment ? [{
+        name: attachment.name,
+        size: (attachment.size / 1024).toFixed(0) + ' KB',
+        type: attachment.type
+      }] : [];
+
       addTicket({
       id: ticketId,
       status: 'OPEN',
@@ -56,7 +62,8 @@ const SubmitRequestPage = ({ isLoggedIn, onLogout, addTicket }) => {
       studentName: 'JOHANNA D.', // Nanti ini bisa diambil dari data user yang sedang login
       nim: ticketData.nim,
       date: dateNow,
-      timestamp: timeNow 
+      timestamp: timeNow,
+      attachments: attachmentsArray
     });
 
 

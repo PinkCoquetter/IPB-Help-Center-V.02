@@ -13,7 +13,7 @@ async def test_login():
     
     async with session_maker() as session:
         try:
-            req = LoginRequest(email="admin@ipb.ac.id", password="admin123")
+            req = LoginRequest(email="admin@apps.ipb.ac.id", password="admin123")
             result = await authenticate_user(req, session)
             print("LOGIN SUCCESS!")
             print(result.access_token)

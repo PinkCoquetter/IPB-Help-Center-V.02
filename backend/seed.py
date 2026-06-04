@@ -20,7 +20,7 @@ async def seed():
         )
         
         staff_akademik = User(
-            full_name="Budi Staff Akademik",
+            full_name="Feli Staff Akademik",
             email="staff.akademik@apps.ipb.ac.id",
             hashed_password=hash_password("staff123"),
             role=RoleEnum.STAFF

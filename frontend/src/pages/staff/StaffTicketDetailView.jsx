@@ -12,17 +12,8 @@ export const StaffTicketDetailView = ({ ticket, onBack, updateTicket }) => {
   const [statusValue, setStatusValue] = useState(ticket.status);
   const [staffValue, setStaffValue] = useState(ticket.assignedStaff || 'Tsabitta');
   const [replyContent, setReplyContent] = useState('');
-  const [messages, setMessages] = useState([
-    {
-      id: 'init',
-    sender: ticket.studentName || "Mahasiswa", // Mengambil dari data tiket
-      role: 'student',
-      text: ticket.desc,
-      time: "09:15",
-      date: ticket.date,
-      attachments: [] // Pesan awal bisa punya lampiran
-    }
-  ]);
+  // Gunakan pesan dari global state
+  const messages = ticket?.messages || [];
 
   // State khusus file
   const [uploadedFiles, setUploadedFiles] = useState([]);
@@ -94,7 +85,7 @@ export const StaffTicketDetailView = ({ ticket, onBack, updateTicket }) => {
         date: "Hari ini"
       };
 
-      setMessages(prev => [...prev, newMessage]);
+      updateTicket(ticket.id, { messages: [...messages, newMessage] });
       setReplyContent('');
       setUploadedFiles([]); // Kosongkan list file setelah kirim
       showNotification('success', 'Balasan dikirim!');

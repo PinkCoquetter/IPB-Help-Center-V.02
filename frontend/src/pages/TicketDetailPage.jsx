@@ -3,23 +3,15 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { HiOutlineCloudUpload, HiChatAlt2, HiOutlineArrowNarrowLeft } from 'react-icons/hi';
 
-const TicketDetailPage = ({ isLoggedIn, onLogout, tickets }) => {
+const TicketDetailPage = ({ isLoggedIn, onLogout, tickets, updateTicket }) => {
   const { id } = useParams();
   const navigate = useNavigate();
   
   // Mencari data tiket dari state global berdasarkan ID di URL
   const ticket = tickets.find(t => t.id === id);
 
-  const [messages, setMessages] = useState(ticket ? [
-    {
-      id: 1,
-      sender: "STUDENT USER",
-      role: 'student',
-      text: ticket.desc,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      date: ticket.date
-    }
-  ] : []);
+  // Gunakan pesan dari global state
+  const messages = ticket?.messages || [];
 
   const [replyText, setReplyText] = useState('');
 
@@ -38,7 +30,7 @@ const now = new Date();
       date: "Today"
     };
 
-    setMessages([...messages, newMessage]);
+    updateTicket(ticket.id, { messages: [...messages, newMessage] });
     setReplyText('');  
   };
 

@@ -91,10 +91,10 @@ export const StaffDashboardView = ({ tickets, onSelectTicket, onLogout, onRefres
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-full bg-[#006071] text-white flex items-center justify-center text-[10px] font-black uppercase">
                       {/* Ambil inisial dari nama mahasiswa */}
-                      {t.student_name ? t.student_name.charAt(0) : (t.studentName ? t.studentName.charAt(0) : 'U')} 
+                      {t.student?.full_name ? t.student.full_name.charAt(0) : (t.student_name ? t.student_name.charAt(0) : (t.studentName ? t.studentName.charAt(0) : 'U'))} 
                     </div>
                     <span className="text-sm font-bold text-gray-700">
-                      {t.student_name || t.studentName || 'Unknown Student'}
+                      {t.student?.full_name || t.student_name || t.studentName || 'Unknown Student'}
                     </span>
                   </div>
                 </td>

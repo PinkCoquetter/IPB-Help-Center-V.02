@@ -62,7 +62,10 @@ async def get_tickets(
     page: int = 1,
     limit: int = 10
 ) -> Sequence[Ticket]:
-    query = select(Ticket)
+    query = select(Ticket).options(
+        selectinload(Ticket.student),
+        selectinload(Ticket.category)
+    )
 
     if user.role == RoleEnum.STUDENT:  # type: ignore
         query = query.where(Ticket.student_id == user.id)

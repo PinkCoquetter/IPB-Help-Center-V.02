@@ -54,6 +54,8 @@ class TicketListResponse(BaseModel):
     status: TicketStatusEnum
     priority: PriorityEnum
     category_id: Optional[int]
+    student: Optional[UserResponse] = None
+    category: Optional[CategoryResponse] = None
     created_at: datetime
     updated_at: Optional[datetime]
     
